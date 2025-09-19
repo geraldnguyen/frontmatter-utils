@@ -10,6 +10,7 @@ A Python library and CLI tool for parsing and searching front matter in files.
 - **Flexible Search**: Search by field name and optionally by value
 - **Array Search**: Search within array/list frontmatter values
 - **Regex Support**: Use regular expressions for value matching
+- **Validation Engine**: Validate frontmatter fields against custom rules
 - **Case Sensitivity**: Support for case-sensitive or case-insensitive matching
 - **Multiple Output Formats**: Console output or CSV export
 - **Glob Pattern Support**: Process multiple files using glob patterns
@@ -34,7 +35,7 @@ pip install -e .
 ### Library Usage
 
 ```python
-from fmu import parse_file, search_frontmatter
+from fmu import parse_file, search_frontmatter, validate_frontmatter
 
 # Parse a single file
 frontmatter, content = parse_file('example.md')
@@ -48,13 +49,16 @@ for file_path, field_name, field_value in results:
 
 # Search within array values
 results = search_frontmatter(['*.md'], 'tags', 'python')
-for file_path, field_name, field_value in results:
-    print(f"{file_path}: Found 'python' in {field_name} = {field_value}")
 
-# Use regex for pattern matching
-results = search_frontmatter(['*.md'], 'title', r'^Guide.*', regex=True)
-for file_path, field_name, field_value in results:
-    print(f"{file_path}: {field_name} matches pattern = {field_value}")
+# Validate frontmatter fields
+validations = [
+    {'type': 'exist', 'field': 'title'},
+    {'type': 'eq', 'field': 'status', 'value': 'published'},
+    {'type': 'contain', 'field': 'tags', 'value': 'tech'}
+]
+failures = validate_frontmatter(['*.md'], validations)
+for file_path, field_name, field_value, reason in failures:
+    print(f"Validation failed in {file_path}: {reason}")
 ```
 
 ### CLI Usage
@@ -93,8 +97,48 @@ fmu search "*.md" --name author --value "John Doe"
 # Case-insensitive search
 fmu search "*.md" --name author --value "john doe" --ignore-case
 
+# Search within array values
+fmu search "*.md" --name tags --value python
+
+# Use regex for pattern matching
+fmu search "*.md" --name title --value "^Guide.*" --regex
+
 # Output results to CSV file
 fmu search "*.md" --name category --csv results.csv
+```
+
+#### Validation Commands
+
+```bash
+# Validate that required fields exist
+fmu validate "*.md" --exist title --exist author
+
+# Validate that certain fields don't exist
+fmu validate "*.md" --not draft --not private
+
+# Validate field values
+fmu validate "*.md" --eq status published --ne category "deprecated"
+
+# Validate array contents
+fmu validate "*.md" --contain tags "tech" --not-contain tags "obsolete"
+
+# Validate using regex patterns
+fmu validate "*.md" --match title "^[A-Z].*" --not-match content "TODO"
+
+# Case-insensitive validation
+fmu validate "*.md" --eq STATUS "published" --ignore-case
+
+# Output validation failures to CSV
+fmu validate "*.md" --exist title --csv validation_report.csv
+
+# Complex validation with multiple rules
+fmu validate "blog/*.md" \
+  --exist title \
+  --exist author \
+  --eq status "published" \
+  --contain tags "tech" \
+  --match date "^\d{4}-\d{2}-\d{2}$" \
+  --csv blog_validation.csv
 ```
 
 #### Global Options
@@ -194,6 +238,58 @@ fmu search "*.md" --name author --value "john.*doe" --regex --ignore-case
 fmu search "*.md" --name tags --csv tags_report.csv
 ```
 
+#### `validate PATTERNS`
+Validate frontmatter fields against custom rules.
+
+**Arguments:**
+- `PATTERNS`: One or more glob patterns, file paths, or directory paths
+
+**Validation Options:**
+- `--exist FIELD`: **Repeatable.** Require field to exist
+- `--not FIELD`: **Repeatable.** Require field to not exist
+- `--eq FIELD VALUE`: **Repeatable.** Require field equals value
+- `--ne FIELD VALUE`: **Repeatable.** Require field not equals value
+- `--contain FIELD VALUE`: **Repeatable.** Require array field contains value
+- `--not-contain FIELD VALUE`: **Repeatable.** Require array field does not contain value
+- `--match FIELD REGEX`: **Repeatable.** Require field matches regex pattern
+- `--not-match FIELD REGEX`: **Repeatable.** Require field does not match regex pattern
+
+**General Options:**
+- `--ignore-case`: Case-insensitive matching (default: false)
+- `--csv FILE`: Optional. Output validation failures to specified CSV file
+
+**Examples:**
+```bash
+# Validate required fields exist
+fmu validate "*.md" --exist title --exist author
+
+# Validate fields don't exist
+fmu validate "*.md" --not draft --not private
+
+# Validate field values
+fmu validate "*.md" --eq status "published" --ne category "deprecated"
+
+# Validate array contents
+fmu validate "*.md" --contain tags "tech" --not-contain tags "obsolete"
+
+# Validate using regex patterns
+fmu validate "*.md" --match title "^[A-Z].*" --not-match content "TODO"
+
+# Case-insensitive validation
+fmu validate "*.md" --eq STATUS "published" --ignore-case
+
+# Multiple validation rules
+fmu validate "blog/*.md" \
+  --exist title \
+  --exist author \
+  --eq status "published" \
+  --contain tags "tech" \
+  --match date "^\d{4}-\d{2}-\d{2}$"
+
+# Export failures to CSV
+fmu validate "*.md" --exist title --csv validation_report.csv
+```
+
 ## Output Formats
 
 ### Console Output
@@ -218,14 +314,32 @@ This is the main content of the post.
 - author: John Doe
 ```
 
+#### Validate Command
+```
+./path/to/file1.md:
+- 	author: None --> Field 'author' does not exist
+
+./path/to/file2.md:
+- 	status: draft --> Field 'status' value 'draft' does not equal 'published'
+```
+
 ### CSV Output
 
+#### Search Command
 When using the `--csv` option with search, output includes:
 
 | File Path | Front Matter Name | Front Matter Value |
 |-----------|-------------------|-------------------|
 | /path/to/file1.md | title | Example Post |
 | /path/to/file2.md | author | John Doe |
+
+#### Validate Command
+When using the `--csv` option with validate, output includes:
+
+| File Path | Front Matter Name | Front Matter Value | Failure Reason |
+|-----------|-------------------|--------------------|-----------------|
+| /path/to/file1.md | author | | Field 'author' does not exist |
+| /path/to/file2.md | status | draft | Field 'status' value 'draft' does not equal 'published' |
 
 ## Library API
 
@@ -280,6 +394,56 @@ Search for frontmatter in files.
 **Enhanced Features (v0.2.0):**
 - **Array Matching**: When searching array/list frontmatter fields, each element is checked against the search value
 - **Regex Support**: Use regular expressions for flexible pattern matching (Python's `re` module)
+
+### Validation Functions
+
+#### `validate_frontmatter(patterns, validations, ignore_case=False, format_type='yaml')`
+Validate frontmatter fields against custom rules.
+
+**Parameters:**
+- `patterns` (List[str]): Glob patterns or file paths
+- `validations` (List[Dict[str, Any]]): List of validation rule dictionaries
+- `ignore_case` (bool): Case-insensitive matching (default: False)
+- `format_type` (str): Format type (default: 'yaml')
+
+**Returns:**
+- `List[Tuple[str, str, Any, str]]`: List of (file_path, field_name, field_value, failure_reason) for failed validations
+
+**Validation Rule Format:**
+Each validation rule is a dictionary with the following structure:
+```python
+# Field existence validation
+{'type': 'exist', 'field': 'title'}
+{'type': 'not', 'field': 'draft'}
+
+# Value equality validation
+{'type': 'eq', 'field': 'status', 'value': 'published'}
+{'type': 'ne', 'field': 'category', 'value': 'deprecated'}
+
+# Array content validation
+{'type': 'contain', 'field': 'tags', 'value': 'tech'}
+{'type': 'not-contain', 'field': 'tags', 'value': 'obsolete'}
+
+# Regex pattern validation
+{'type': 'match', 'field': 'title', 'regex': '^[A-Z].*'}
+{'type': 'not-match', 'field': 'content', 'regex': 'TODO'}
+```
+
+#### `validate_and_output(patterns, validations, ignore_case=False, csv_file=None, format_type='yaml')`
+Validate frontmatter and output results directly.
+
+**Parameters:**
+- `patterns` (List[str]): Glob patterns or file paths
+- `validations` (List[Dict[str, Any]]): List of validation rule dictionaries
+- `ignore_case` (bool): Case-insensitive matching (default: False)
+- `csv_file` (Optional[str]): Path to CSV file for output (default: console output)
+- `format_type` (str): Format type (default: 'yaml')
+
+**New Features (v0.3.0):**
+- **Comprehensive Validation**: Eight different validation types for thorough frontmatter checking
+- **Flexible Rules**: Multiple validation rules can be applied to the same file
+- **Error Reporting**: Clear, descriptive error messages for each validation failure
+- **CSV Export**: Export validation failures to CSV for analysis and reporting
 
 ## File Format Support
 
@@ -389,6 +553,29 @@ python -m pytest tests/test_cli.py
 MIT License - see LICENSE file for details.
 
 ## Changelog
+
+### Version 0.3.0
+
+- **New validation command**
+  - `validate` command for comprehensive frontmatter validation
+  - Eight validation types: exist, not, eq, ne, contain, not-contain, match, not-match
+  - Support for field existence, value equality, array content, and regex pattern validation
+- **Enhanced CLI capabilities**
+  - Repeatable validation options (e.g., multiple `--exist` flags)
+  - Case-insensitive validation with `--ignore-case`
+  - CSV export for validation failures with detailed failure reasons
+- **Library API enhancements**
+  - New `validate_frontmatter()` function for programmatic validation
+  - New `validate_and_output()` function for direct output
+  - Comprehensive validation rule format
+- **Comprehensive testing**
+  - 30 new validation tests covering all validation types
+  - 7 new CLI tests for validation functionality
+  - Enhanced error handling and edge case coverage
+- **Documentation updates**
+  - Complete validation command documentation
+  - Detailed validation examples and use cases
+  - Enhanced API documentation with validation functions
 
 ### Version 0.2.0
 
