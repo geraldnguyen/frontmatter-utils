@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="fmu",
-    version="0.3.0",
+    version="0.4.0",
     author="Gerald Nguyen The Huy",
     author_email="",
     description="A Python library and CLI tool for parsing and searching front matter in files",
