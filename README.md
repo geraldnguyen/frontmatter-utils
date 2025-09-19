@@ -11,6 +11,9 @@ A Python library and CLI tool for parsing and searching front matter in files.
 - **Array Search**: Search within array/list frontmatter values
 - **Regex Support**: Use regular expressions for value matching
 - **Validation Engine**: Validate frontmatter fields against custom rules
+- **Update Engine**: Transform, replace, and remove frontmatter values *(New in v0.4.0)*
+- **Case Transformations**: Six different case conversion types *(New in v0.4.0)*
+- **Value Deduplication**: Automatic removal of duplicate array values *(New in v0.4.0)*
 - **Case Sensitivity**: Support for case-sensitive or case-insensitive matching
 - **Multiple Output Formats**: Console output or CSV export
 - **Glob Pattern Support**: Process multiple files using glob patterns
@@ -35,7 +38,7 @@ pip install -e .
 ### Library Usage
 
 ```python
-from fmu import parse_file, search_frontmatter, validate_frontmatter
+from fmu import parse_file, search_frontmatter, validate_frontmatter, update_frontmatter
 
 # Parse a single file
 frontmatter, content = parse_file('example.md')
@@ -59,6 +62,17 @@ validations = [
 failures = validate_frontmatter(['*.md'], validations)
 for file_path, field_name, field_value, reason in failures:
     print(f"Validation failed in {file_path}: {reason}")
+
+# Update frontmatter fields (New in v0.4.0)
+operations = [
+    {'type': 'case', 'case_type': 'lower'},
+    {'type': 'replace', 'from': 'python', 'to': 'programming', 'ignore_case': False, 'regex': False},
+    {'type': 'remove', 'value': 'deprecated', 'ignore_case': False, 'regex': False}
+]
+results = update_frontmatter(['*.md'], 'tags', operations, deduplication=True)
+for result in results:
+    if result['changes_made']:
+        print(f"Updated {result['file_path']}: {result['reason']}")
 ```
 
 ### CLI Usage
@@ -139,6 +153,50 @@ fmu validate "blog/*.md" \
   --contain tags "tech" \
   --match date "^\d{4}-\d{2}-\d{2}$" \
   --csv blog_validation.csv
+```
+
+#### Update Commands (New in v0.4.0)
+
+```bash
+# Transform case of frontmatter values
+fmu update "*.md" --frontmatter title --case "Title Case"
+fmu update "*.md" --frontmatter author --case lower
+
+# Replace values
+fmu update "*.md" --frontmatter status --replace draft published
+fmu update "*.md" --frontmatter category --replace "old-name" "new-name"
+
+# Case-insensitive replacement
+fmu update "*.md" --frontmatter tags --replace Python python --replace-ignore-case
+
+# Regex-based replacement
+fmu update "*.md" --frontmatter content --replace "TODO:.*" "DONE" --replace-regex
+
+# Remove specific values
+fmu update "*.md" --frontmatter tags --remove "deprecated"
+fmu update "*.md" --frontmatter status --remove "draft"
+
+# Remove with regex patterns
+fmu update "*.md" --frontmatter tags --remove "^test.*" --remove-regex
+
+# Multiple operations (applied in sequence)
+fmu update "*.md" --frontmatter tags \
+  --replace python programming \
+  --remove deprecated \
+  --case lower
+
+# Disable deduplication (enabled by default for arrays)
+fmu update "*.md" --frontmatter tags --deduplication false --case lower
+
+# Complex update with multiple operations
+fmu update "blog/*.md" \
+  --frontmatter tags \
+  --case lower \
+  --replace "javascript" "js" \
+  --replace "python" "py" \
+  --remove "deprecated" \
+  --remove "old" \
+  --deduplication true
 ```
 
 #### Global Options
@@ -288,6 +346,75 @@ fmu validate "blog/*.md" \
 
 # Export failures to CSV
 fmu validate "*.md" --exist title --csv validation_report.csv
+```
+
+#### `update PATTERNS` (New in v0.4.0)
+Update frontmatter fields in files with various transformations.
+
+**Arguments:**
+- `PATTERNS`: One or more glob patterns, file paths, or directory paths
+
+**Required Options:**
+- `--frontmatter FIELD`: **Required.** Name of the frontmatter field to update
+
+**Update Operations:**
+- `--case CASE_TYPE`: Transform case of values. Options: `upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`
+- `--replace FROM TO`: **Repeatable.** Replace values matching FROM with TO
+- `--remove VALUE`: **Repeatable.** Remove values matching VALUE
+
+**Replace Operation Options:**
+- `--replace-ignore-case`: Ignore case when performing replacements (default: false)
+- `--replace-regex`: Treat FROM and TO as regex patterns for replacement (default: false)
+
+**Remove Operation Options:**
+- `--remove-ignore-case`: Ignore case when performing removals (default: false)
+- `--remove-regex`: Treat VALUE as regex pattern for removal (default: false)
+
+**General Options:**
+- `--deduplication {true,false}`: Eliminate exact duplicates in array values (default: true, applied last)
+
+**Examples:**
+```bash
+# Transform case of values
+fmu update "*.md" --frontmatter title --case "Title Case"
+fmu update "*.md" --frontmatter author --case lower
+fmu update "*.md" --frontmatter tags --case kebab-case
+
+# Replace values (substring replacement)
+fmu update "*.md" --frontmatter status --replace draft published
+fmu update "*.md" --frontmatter category --replace "old-name" "new-name"
+
+# Case-insensitive replacement
+fmu update "*.md" --frontmatter tags --replace Python python --replace-ignore-case
+
+# Regex-based replacement
+fmu update "*.md" --frontmatter content --replace "TODO:.*" "DONE" --replace-regex
+
+# Remove specific values
+fmu update "*.md" --frontmatter tags --remove "deprecated"
+fmu update "*.md" --frontmatter status --remove "draft"
+
+# Remove with regex patterns
+fmu update "*.md" --frontmatter tags --remove "^test.*" --remove-regex
+
+# Multiple operations (applied in sequence: case, replace, remove, then deduplication)
+fmu update "*.md" --frontmatter tags \
+  --case lower \
+  --replace python programming \
+  --remove deprecated
+
+# Disable deduplication
+fmu update "*.md" --frontmatter tags --deduplication false --case lower
+
+# Complex update example
+fmu update "blog/*.md" \
+  --frontmatter tags \
+  --case lower \
+  --replace "javascript" "js" \
+  --replace "python" "py" \
+  --remove "deprecated" \
+  --remove "old" \
+  --deduplication true
 ```
 
 ## Output Formats
@@ -445,6 +572,68 @@ Validate frontmatter and output results directly.
 - **Error Reporting**: Clear, descriptive error messages for each validation failure
 - **CSV Export**: Export validation failures to CSV for analysis and reporting
 
+### Update Functions (New in v0.4.0)
+
+#### `update_frontmatter(patterns, frontmatter_name, operations, deduplication=True, format_type='yaml')`
+Update frontmatter fields in files with various transformations.
+
+**Parameters:**
+- `patterns` (List[str]): Glob patterns or file paths
+- `frontmatter_name` (str): Name of frontmatter field to update
+- `operations` (List[Dict[str, Any]]): List of update operation dictionaries
+- `deduplication` (bool): Whether to deduplicate array values (default: True, applied last)
+- `format_type` (str): Format type (default: 'yaml')
+
+**Returns:**
+- `List[Dict[str, Any]]`: List of update results with file paths and changes made
+
+**Operation Types:**
+```python
+# Case transformation
+{'type': 'case', 'case_type': 'upper'}  # or 'lower', 'Sentence case', 'Title Case', 'snake_case', 'kebab-case'
+
+# Value replacement
+{'type': 'replace', 'from': 'old_value', 'to': 'new_value', 'ignore_case': False, 'regex': False}
+
+# Value removal
+{'type': 'remove', 'value': 'value_to_remove', 'ignore_case': False, 'regex': False}
+```
+
+**Example:**
+```python
+from fmu import update_frontmatter
+
+# Transform case and replace values
+operations = [
+    {'type': 'case', 'case_type': 'lower'},
+    {'type': 'replace', 'from': 'python', 'to': 'programming', 'ignore_case': False, 'regex': False},
+    {'type': 'remove', 'value': 'deprecated', 'ignore_case': False, 'regex': False}
+]
+
+results = update_frontmatter(['*.md'], 'tags', operations, deduplication=True)
+for result in results:
+    if result['changes_made']:
+        print(f"Updated {result['file_path']}: {result['original_value']} -> {result['new_value']}")
+```
+
+#### `update_and_output(patterns, frontmatter_name, operations, deduplication=True, format_type='yaml')`
+Update frontmatter and output results directly to console.
+
+**Parameters:**
+- `patterns` (List[str]): Glob patterns or file paths
+- `frontmatter_name` (str): Name of frontmatter field to update
+- `operations` (List[Dict[str, Any]]): List of update operation dictionaries
+- `deduplication` (bool): Whether to deduplicate array values (default: True)
+- `format_type` (str): Format type (default: 'yaml')
+
+**New Features (v0.4.0):**
+- **Case Transformations**: Six different case transformation types (upper, lower, sentence, title, snake_case, kebab-case)
+- **Flexible Replacements**: Substring and regex-based replacements with case sensitivity options
+- **Value Removal**: Remove specific values or regex patterns from frontmatter fields
+- **Array Deduplication**: Automatic removal of exact duplicates in array values
+- **Multiple Operations**: Apply multiple transformations in sequence
+- **In-place Updates**: Modify files directly while preserving original structure
+
 ## File Format Support
 
 ### YAML Frontmatter
@@ -553,6 +742,32 @@ python -m pytest tests/test_cli.py
 MIT License - see LICENSE file for details.
 
 ## Changelog
+
+### Version 0.4.0
+
+- **New update command**
+  - `update` command for modifying frontmatter fields in place
+  - Six case transformation types: upper, lower, Sentence case, Title Case, snake_case, kebab-case
+  - Flexible value replacement with substring and regex support
+  - Value removal with regex pattern support
+  - Automatic array deduplication (configurable)
+  - Multiple operations can be applied in sequence
+- **Enhanced CLI options**
+  - `--case` option for case transformations
+  - `--replace` option with `--replace-ignore-case` and `--replace-regex` sub-options
+  - `--remove` option with `--remove-ignore-case` and `--remove-regex` sub-options
+  - `--deduplication` option to control array deduplication
+- **Library API enhancements**
+  - `update_frontmatter()` function for programmatic updates
+  - `update_and_output()` function for direct console output
+  - Comprehensive operation support in library mode
+- **Comprehensive testing**
+  - 27 new update tests covering all update functionality
+  - Enhanced error handling and edge case coverage
+- **Documentation updates**
+  - Complete update command documentation
+  - Detailed update examples and use cases
+  - Enhanced API documentation with update functions
 
 ### Version 0.3.0
 
