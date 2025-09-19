@@ -167,17 +167,17 @@ fmu update "*.md" --frontmatter status --replace draft published
 fmu update "*.md" --frontmatter category --replace "old-name" "new-name"
 
 # Case-insensitive replacement
-fmu update "*.md" --frontmatter tags --replace Python python --replace-ignore-case
+fmu update "*.md" --frontmatter tags --replace Python python --ignore-case
 
 # Regex-based replacement
-fmu update "*.md" --frontmatter content --replace "TODO:.*" "DONE" --replace-regex
+fmu update "*.md" --frontmatter content --replace "TODO:.*" "DONE" --regex
 
 # Remove specific values
 fmu update "*.md" --frontmatter tags --remove "deprecated"
 fmu update "*.md" --frontmatter status --remove "draft"
 
 # Remove with regex patterns
-fmu update "*.md" --frontmatter tags --remove "^test.*" --remove-regex
+fmu update "*.md" --frontmatter tags --remove "^test.*" --regex
 
 # Multiple operations (applied in sequence)
 fmu update "*.md" --frontmatter tags \
@@ -362,13 +362,9 @@ Update frontmatter fields in files with various transformations.
 - `--replace FROM TO`: **Repeatable.** Replace values matching FROM with TO
 - `--remove VALUE`: **Repeatable.** Remove values matching VALUE
 
-**Replace Operation Options:**
-- `--replace-ignore-case`: Ignore case when performing replacements (default: false)
-- `--replace-regex`: Treat FROM and TO as regex patterns for replacement (default: false)
-
-**Remove Operation Options:**
-- `--remove-ignore-case`: Ignore case when performing removals (default: false)
-- `--remove-regex`: Treat VALUE as regex pattern for removal (default: false)
+**Shared Operation Options:**
+- `--ignore-case`: Ignore case when performing replacements and removals (default: false)
+- `--regex`: Treat patterns as regex for replacements and removals (default: false)
 
 **General Options:**
 - `--deduplication {true,false}`: Eliminate exact duplicates in array values (default: true, applied last)
@@ -385,17 +381,17 @@ fmu update "*.md" --frontmatter status --replace draft published
 fmu update "*.md" --frontmatter category --replace "old-name" "new-name"
 
 # Case-insensitive replacement
-fmu update "*.md" --frontmatter tags --replace Python python --replace-ignore-case
+fmu update "*.md" --frontmatter tags --replace Python python --ignore-case
 
 # Regex-based replacement
-fmu update "*.md" --frontmatter content --replace "TODO:.*" "DONE" --replace-regex
+fmu update "*.md" --frontmatter content --replace "TODO:.*" "DONE" --regex
 
 # Remove specific values
 fmu update "*.md" --frontmatter tags --remove "deprecated"
 fmu update "*.md" --frontmatter status --remove "draft"
 
 # Remove with regex patterns
-fmu update "*.md" --frontmatter tags --remove "^test.*" --remove-regex
+fmu update "*.md" --frontmatter tags --remove "^test.*" --regex
 
 # Multiple operations (applied in sequence: case, replace, remove, then deduplication)
 fmu update "*.md" --frontmatter tags \
@@ -754,8 +750,9 @@ MIT License - see LICENSE file for details.
   - Multiple operations can be applied in sequence
 - **Enhanced CLI options**
   - `--case` option for case transformations
-  - `--replace` option with `--replace-ignore-case` and `--replace-regex` sub-options
-  - `--remove` option with `--remove-ignore-case` and `--remove-regex` sub-options
+  - `--replace` option for value replacement
+  - `--remove` option for value removal
+  - Shared `--ignore-case` and `--regex` options for both replace and remove operations
   - `--deduplication` option to control array deduplication
 - **Library API enhancements**
   - `update_frontmatter()` function for programmatic updates

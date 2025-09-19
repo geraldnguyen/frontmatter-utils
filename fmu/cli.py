@@ -240,16 +240,6 @@ def create_parser():
         metavar=('FROM', 'TO'),
         help='Replace values matching FROM with TO (can be used multiple times)'
     )
-    update_parser.add_argument(
-        '--replace-ignore-case',
-        action='store_true',
-        help='Ignore case when performing replacements (default: false)'
-    )
-    update_parser.add_argument(
-        '--replace-regex',
-        action='store_true',
-        help='Treat FROM and TO as regex patterns for replacement (default: false)'
-    )
     
     # Remove operations (can appear multiple times)
     update_parser.add_argument(
@@ -257,15 +247,17 @@ def create_parser():
         action='append',
         help='Remove values matching the specified pattern (can be used multiple times)'
     )
+    
+    # Shared options for replace and remove operations
     update_parser.add_argument(
-        '--remove-ignore-case',
+        '--ignore-case',
         action='store_true',
-        help='Ignore case when performing removals (default: false)'
+        help='Ignore case when performing replacements and removals (default: false)'
     )
     update_parser.add_argument(
-        '--remove-regex',
+        '--regex',
         action='store_true',
-        help='Treat remove patterns as regex (default: false)'
+        help='Treat patterns as regex for replacements and removals (default: false)'
     )
     
     return parser
@@ -289,8 +281,8 @@ def _parse_update_args(args) -> List[Dict[str, Any]]:
                 'type': 'replace',
                 'from': from_val,
                 'to': to_val,
-                'ignore_case': args.replace_ignore_case,
-                'regex': args.replace_regex
+                'ignore_case': args.ignore_case,
+                'regex': args.regex
             })
     
     # Handle --remove operations
@@ -299,8 +291,8 @@ def _parse_update_args(args) -> List[Dict[str, Any]]:
             operations.append({
                 'type': 'remove',
                 'value': remove_val,
-                'ignore_case': args.remove_ignore_case,
-                'regex': args.remove_regex
+                'ignore_case': args.ignore_case,
+                'regex': args.regex
             })
     
     return operations
