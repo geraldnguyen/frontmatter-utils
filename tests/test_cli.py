@@ -8,7 +8,7 @@ import os
 import sys
 import io
 from unittest.mock import patch
-from fmu.cli import main, cmd_version, cmd_help, cmd_read, cmd_search
+from fmu.cli import main, cmd_version, cmd_help, cmd_read, cmd_search, cmd_validate
 
 
 class TestCLIFunctionality(unittest.TestCase):
@@ -46,7 +46,7 @@ This is test content.""")
     def test_cmd_version(self):
         """Test version command."""
         output = self.capture_output(cmd_version)
-        self.assertIn('0.2.0', output)
+        self.assertIn('0.3.0', output)
     
     def test_cmd_help(self):
         """Test help command."""
@@ -56,6 +56,7 @@ This is test content.""")
         self.assertIn('help', output)
         self.assertIn('read', output)
         self.assertIn('search', output)
+        self.assertIn('validate', output)
     
     def test_cmd_read_both(self):
         """Test read command with both output."""
@@ -116,7 +117,7 @@ This is test content.""")
     def test_main_version(self):
         """Test main function with version command."""
         output = self.capture_output(main)
-        self.assertIn('0.2.0', output)
+        self.assertIn('0.3.0', output)
     
     @patch('sys.argv', ['fmu', 'help'])
     def test_main_help(self):
@@ -179,6 +180,78 @@ Test content for regex arrays.""")
             main()
         except SystemExit:
             pass  # Expected due to file not found, but parser should work
+    
+    def test_cmd_validate_console_output(self):
+        """Test validate command with console output."""
+        validations = [
+            {'type': 'exist', 'field': 'nonexistent'}
+        ]
+        
+        output = self.capture_output(cmd_validate, [self.test_file], validations)
+        self.assertIn(self.test_file, output)
+        self.assertIn('nonexistent', output)
+        self.assertIn('does not exist', output)
+    
+    def test_cmd_validate_csv_output(self):
+        """Test validate command with CSV output."""
+        validations = [
+            {'type': 'exist', 'field': 'nonexistent'}
+        ]
+        
+        csv_file = os.path.join(self.temp_dir, 'validation_output.csv')
+        cmd_validate([self.test_file], validations, csv_file=csv_file)
+        
+        self.assertTrue(os.path.exists(csv_file))
+        with open(csv_file, 'r') as f:
+            content = f.read()
+            self.assertIn('File Path,Front Matter Name,Front Matter Value,Failure Reason', content)
+            self.assertIn(self.test_file, content)
+            self.assertIn('nonexistent', content)
+    
+    def test_cmd_validate_multiple_rules(self):
+        """Test validate command with multiple validation rules."""
+        validations = [
+            {'type': 'exist', 'field': 'title'},
+            {'type': 'eq', 'field': 'author', 'value': 'Wrong Author'},
+            {'type': 'contain', 'field': 'tags', 'value': 'missing_tag'}
+        ]
+        
+        output = self.capture_output(cmd_validate, [self.test_file], validations)
+        
+        # Should pass the exist check for title
+        # Should fail the eq check for author
+        # Should fail the contain check for tags (not an array)
+        self.assertIn('author', output)
+        self.assertIn('does not equal', output)
+        self.assertIn('tags', output)
+    
+    def test_cmd_validate_case_insensitive(self):
+        """Test validate command with case-insensitive matching."""
+        validations = [
+            {'type': 'eq', 'field': 'TITLE', 'value': 'test post'}
+        ]
+        
+        output = self.capture_output(cmd_validate, [self.test_file], validations, ignore_case=True)
+        
+        # Should pass with case-insensitive matching
+        self.assertEqual(output.strip(), '')  # No failures expected
+    
+    @patch('sys.argv', ['fmu', 'validate', 'nonexistent.md', '--exist', 'title'])
+    def test_main_validate_basic(self):
+        """Test main function with validate command."""
+        # Test that the argument parser correctly handles validation arguments
+        try:
+            main()
+        except SystemExit:
+            pass  # Expected due to file not found, but parser should work
+    
+    @patch('sys.argv', ['fmu', 'validate', 'test.md'])
+    def test_main_validate_no_rules(self):
+        """Test main function with validate command but no validation rules."""
+        # Should exit with error about no validation rules
+        with self.assertRaises(SystemExit) as cm:
+            main()
+        self.assertEqual(cm.exception.code, 1)
 
 
 if __name__ == '__main__':

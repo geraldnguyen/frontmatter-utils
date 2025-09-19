@@ -4,10 +4,11 @@ Command Line Interface for fmu.
 
 import argparse
 import sys
-from typing import List
+from typing import List, Dict, Any
 from . import __version__
 from .core import parse_file, get_files_from_patterns
 from .search import search_and_output
+from .validation import validate_and_output
 
 
 def cmd_version():
@@ -31,6 +32,7 @@ def cmd_help():
     print("  help              Show this help message")
     print("  read PATTERNS     Parse files and extract frontmatter/content")
     print("  search PATTERNS   Search for specific frontmatter fields")
+    print("  validate PATTERNS Validate frontmatter fields against rules")
     print()
     print("For command-specific help, use: fmu COMMAND --help")
 
@@ -96,6 +98,26 @@ def cmd_search(
     search_and_output(patterns, name, value, ignore_case, regex, csv_file, format_type)
 
 
+def cmd_validate(
+    patterns: List[str],
+    validations: List[Dict[str, Any]],
+    ignore_case: bool = False,
+    csv_file: str = None,
+    format_type: str = "yaml"
+):
+    """
+    Handle validate command.
+    
+    Args:
+        patterns: List of glob patterns or file paths
+        validations: List of validation rules
+        ignore_case: Whether to perform case-insensitive matching
+        csv_file: Optional CSV file for output
+        format_type: Format of frontmatter
+    """
+    validate_and_output(patterns, validations, ignore_case, csv_file, format_type)
+
+
 def create_parser():
     """Create argument parser."""
     parser = argparse.ArgumentParser(
@@ -149,7 +171,75 @@ def create_parser():
     )
     search_parser.add_argument('--csv', dest='csv_file', help='Output to CSV file')
     
+    # Validate command
+    validate_parser = subparsers.add_parser('validate', help='Validate frontmatter fields against rules')
+    validate_parser.add_argument('patterns', nargs='+', help='Glob patterns or file paths')
+    
+    # Validation rule options (can appear multiple times)
+    validate_parser.add_argument('--exist', action='append', help='Require field to exist')
+    validate_parser.add_argument('--not', action='append', dest='not_exist', help='Require field to not exist')
+    validate_parser.add_argument('--eq', action='append', nargs=2, metavar=('FIELD', 'VALUE'), help='Require field equals value')
+    validate_parser.add_argument('--ne', action='append', nargs=2, metavar=('FIELD', 'VALUE'), help='Require field not equals value')
+    validate_parser.add_argument('--contain', action='append', nargs=2, metavar=('FIELD', 'VALUE'), help='Require array field contains value')
+    validate_parser.add_argument('--not-contain', action='append', nargs=2, metavar=('FIELD', 'VALUE'), dest='not_contain', help='Require array field does not contain value')
+    validate_parser.add_argument('--match', action='append', nargs=2, metavar=('FIELD', 'REGEX'), help='Require field matches regex')
+    validate_parser.add_argument('--not-match', action='append', nargs=2, metavar=('FIELD', 'REGEX'), dest='not_match', help='Require field does not match regex')
+    
+    validate_parser.add_argument(
+        '--ignore-case',
+        action='store_true',
+        help='Case-insensitive matching (default: false)'
+    )
+    validate_parser.add_argument('--csv', dest='csv_file', help='Output to CSV file')
+    
     return parser
+
+
+def _parse_validation_args(args) -> List[Dict[str, Any]]:
+    """Parse validation arguments into validation rules."""
+    validations = []
+    
+    # Handle --exist
+    if args.exist:
+        for field in args.exist:
+            validations.append({'type': 'exist', 'field': field})
+    
+    # Handle --not
+    if args.not_exist:
+        for field in args.not_exist:
+            validations.append({'type': 'not', 'field': field})
+    
+    # Handle --eq
+    if args.eq:
+        for field, value in args.eq:
+            validations.append({'type': 'eq', 'field': field, 'value': value})
+    
+    # Handle --ne
+    if args.ne:
+        for field, value in args.ne:
+            validations.append({'type': 'ne', 'field': field, 'value': value})
+    
+    # Handle --contain
+    if args.contain:
+        for field, value in args.contain:
+            validations.append({'type': 'contain', 'field': field, 'value': value})
+    
+    # Handle --not-contain
+    if args.not_contain:
+        for field, value in args.not_contain:
+            validations.append({'type': 'not-contain', 'field': field, 'value': value})
+    
+    # Handle --match
+    if args.match:
+        for field, regex in args.match:
+            validations.append({'type': 'match', 'field': field, 'regex': regex})
+    
+    # Handle --not-match
+    if args.not_match:
+        for field, regex in args.not_match:
+            validations.append({'type': 'not-match', 'field': field, 'regex': regex})
+    
+    return validations
 
 
 def main():
@@ -175,6 +265,18 @@ def main():
             value=args.value,
             ignore_case=args.ignore_case,
             regex=args.regex,
+            csv_file=args.csv_file,
+            format_type=args.format
+        )
+    elif args.command == 'validate':
+        validations = _parse_validation_args(args)
+        if not validations:
+            print("Error: No validation rules specified", file=sys.stderr)
+            sys.exit(1)
+        cmd_validate(
+            patterns=args.patterns,
+            validations=validations,
+            ignore_case=args.ignore_case,
             csv_file=args.csv_file,
             format_type=args.format
         )
