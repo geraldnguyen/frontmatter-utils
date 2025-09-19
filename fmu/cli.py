@@ -9,6 +9,7 @@ from . import __version__
 from .core import parse_file, get_files_from_patterns
 from .search import search_and_output
 from .validation import validate_and_output
+from .update import update_and_output
 
 
 def cmd_version():
@@ -33,6 +34,7 @@ def cmd_help():
     print("  read PATTERNS     Parse files and extract frontmatter/content")
     print("  search PATTERNS   Search for specific frontmatter fields")
     print("  validate PATTERNS Validate frontmatter fields against rules")
+    print("  update PATTERNS   Update frontmatter fields")
     print()
     print("For command-specific help, use: fmu COMMAND --help")
 
@@ -118,6 +120,26 @@ def cmd_validate(
     validate_and_output(patterns, validations, ignore_case, csv_file, format_type)
 
 
+def cmd_update(
+    patterns: List[str],
+    frontmatter_name: str,
+    operations: List[Dict[str, Any]],
+    deduplication: bool = True,
+    format_type: str = "yaml"
+):
+    """
+    Handle update command.
+    
+    Args:
+        patterns: List of glob patterns or file paths
+        frontmatter_name: Name of frontmatter field to update
+        operations: List of update operations to apply
+        deduplication: Whether to deduplicate array values
+        format_type: Format of frontmatter
+    """
+    update_and_output(patterns, frontmatter_name, operations, deduplication, format_type)
+
+
 def create_parser():
     """Create argument parser."""
     parser = argparse.ArgumentParser(
@@ -192,7 +214,88 @@ def create_parser():
     )
     validate_parser.add_argument('--csv', dest='csv_file', help='Output to CSV file')
     
+    # Update command
+    update_parser = subparsers.add_parser('update', help='Update frontmatter fields')
+    update_parser.add_argument('patterns', nargs='+', help='Glob patterns or file paths')
+    update_parser.add_argument('--name', required=True, help='Name of frontmatter field to update')
+    
+    # Update operation options
+    update_parser.add_argument(
+        '--deduplication',
+        choices=['true', 'false'],
+        default='true',
+        help='Eliminate exact duplicates in array values (default: true)'
+    )
+    update_parser.add_argument(
+        '--case',
+        choices=['upper', 'lower', 'Sentence case', 'Title Case', 'snake_case', 'kebab-case'],
+        help='Transform the case of the frontmatter value(s)'
+    )
+    
+    # Replace operations (can appear multiple times)
+    update_parser.add_argument(
+        '--replace',
+        action='append',
+        nargs=2,
+        metavar=('FROM', 'TO'),
+        help='Replace values matching FROM with TO (can be used multiple times)'
+    )
+    
+    # Remove operations (can appear multiple times)
+    update_parser.add_argument(
+        '--remove',
+        action='append',
+        help='Remove values matching the specified pattern (can be used multiple times)'
+    )
+    
+    # Shared options for replace and remove operations
+    update_parser.add_argument(
+        '--ignore-case',
+        action='store_true',
+        help='Ignore case when performing replacements and removals (default: false)'
+    )
+    update_parser.add_argument(
+        '--regex',
+        action='store_true',
+        help='Treat patterns as regex for replacements and removals (default: false)'
+    )
+    
     return parser
+
+
+def _parse_update_args(args) -> List[Dict[str, Any]]:
+    """Parse update arguments into update operations."""
+    operations = []
+    
+    # Handle --case
+    if args.case:
+        operations.append({
+            'type': 'case',
+            'case_type': args.case
+        })
+    
+    # Handle --replace operations
+    if args.replace:
+        for from_val, to_val in args.replace:
+            operations.append({
+                'type': 'replace',
+                'from': from_val,
+                'to': to_val,
+                'ignore_case': args.ignore_case,
+                'regex': args.regex
+            })
+    
+    # Handle --remove operations
+    if args.remove:
+        for remove_val in args.remove:
+            operations.append({
+                'type': 'remove',
+                'value': remove_val,
+                'ignore_case': args.ignore_case,
+                'regex': args.regex
+            })
+    
+    return operations
 
 
 def _parse_validation_args(args) -> List[Dict[str, Any]]:
@@ -278,6 +381,18 @@ def main():
             validations=validations,
             ignore_case=args.ignore_case,
             csv_file=args.csv_file,
+            format_type=args.format
+        )
+    elif args.command == 'update':
+        operations = _parse_update_args(args)
+        if not operations:
+            print("Error: No update operations specified", file=sys.stderr)
+            sys.exit(1)
+        cmd_update(
+            patterns=args.patterns,
+            frontmatter_name=args.name,
+            operations=operations,
+            deduplication=(args.deduplication == 'true'),
             format_type=args.format
         )
     elif args.command is None:
