@@ -67,6 +67,30 @@ Create or update extensive unit tests for both the library mode and CLI modes.
 Update README file with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI
 
 
+# Version 0.4.0
+
+Add a new capability/command: Update:
+
+Support a new command "update [patterns]". This command supports the following options:
+- "--frontmatter [frontmatter]": required. The name of the front matter to update
+- "--deduplication [true|false]": default to true. Eliminate exact duplicates in the values of each front matter of type array.
+- "--case [upper|lower|Sentence case|Title Case|snake_case|kebab-case]": transform the value or values (if array) of the front matter to the specified casing
+- "--replace [from] [to]": Can appear multiple times. If specified and if the front matter's value (or one of front matter's values if array) match the [from], replace it by the [to] value . This option supports the following extra options:
+     + "--ignore-case [true|false]: default to false. If true, ignore case when perform replacement.
+     + "--regex [true|false]": default to false. If true, treat [from] and [to] as regex and perform regex replacement. If ignore case option is specified, perform regex replacement case-insensitively.
+- "--remove [value]". Can appear multiple times. If specified and if the front matter's value (or one of front matter's values if array) match the [from], remove it. If the front matter is not of type array and the removal results in it having no value, remove the front matter. This option supports the same "--ignore-case" and "--regex [true|false]" option.
+     + "--ignore-case [true|false]: default to false. If true, ignore case when perform removal.
+     + "--regex [true|false]": default to false. If true, treat [value] as regex when perform removal. If ignore case option is specified, perform regex removal case-insensitively.
+
+There may be multiple update per front matter and per input file. If deduplication option is specified, it must be the last to execute.
+
+Update or expose correcting library function to support the above changes in CLI.
+
+Save all dependencies in a requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README file with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI
 
 # Future versions -- do not execute unless explicitly prompt
 
@@ -77,3 +101,4 @@ Update README file with comprehensive instruction on getting started and how to 
 -- dry-run
 -- mapping
 
+-- update spec
