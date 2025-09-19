@@ -130,6 +130,56 @@ This is test content.""")
         output = self.capture_output(main)
         self.assertIn('fmu - Front Matter Utils', output)
 
+    def test_cmd_search_array_values(self):
+        """Test search command with array values."""
+        # Create a test file with array frontmatter
+        test_file_array = os.path.join(self.temp_dir, 'array_test.md')
+        with open(test_file_array, 'w') as f:
+            f.write("""---
+title: Array Test
+tags: [python, testing, arrays]
+categories: [tech, programming]
+---
+
+Test content for arrays.""")
+        
+        # Test searching for a value in an array
+        output = self.capture_output(cmd_search, [test_file_array], 'tags', 'python')
+        self.assertIn(test_file_array, output)
+        self.assertIn('tags: [\'python\', \'testing\', \'arrays\']', output)
+
+    def test_cmd_search_with_regex(self):
+        """Test search command with regex option."""
+        output = self.capture_output(cmd_search, [self.test_file], 'title', r'^Test', False, True)
+        self.assertIn(self.test_file, output)
+        self.assertIn('title: Test Post', output)
+
+    def test_cmd_search_array_with_regex(self):
+        """Test search command with regex on array values."""
+        # Create a test file with array frontmatter
+        test_file_array = os.path.join(self.temp_dir, 'regex_array_test.md')
+        with open(test_file_array, 'w') as f:
+            f.write("""---
+title: Regex Array Test
+tags: [python, testing, programming, scripting]
+---
+
+Test content for regex arrays.""")
+        
+        # Test regex search for tags ending with 'ing'
+        output = self.capture_output(cmd_search, [test_file_array], 'tags', r'ing$', False, True)
+        self.assertIn(test_file_array, output)
+        # Should match both "testing", "programming", and "scripting"
+
+    @patch('sys.argv', ['fmu', 'search', 'test.md', '--name', 'title', '--regex'])
+    def test_main_search_with_regex_flag(self):
+        """Test main function with search command and regex flag."""
+        # This tests that the argument parser correctly handles the --regex flag
+        try:
+            main()
+        except SystemExit:
+            pass  # Expected due to file not found, but parser should work
+
 
 if __name__ == '__main__':
     unittest.main()

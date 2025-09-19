@@ -77,6 +77,7 @@ def cmd_search(
     name: str,
     value: str = None,
     ignore_case: bool = False,
+    regex: bool = False,
     csv_file: str = None,
     format_type: str = "yaml"
 ):
@@ -88,10 +89,11 @@ def cmd_search(
         name: Name of frontmatter field to search for
         value: Optional value to match
         ignore_case: Whether to perform case-insensitive matching
+        regex: Whether to use regex pattern matching for values
         csv_file: Optional CSV file for output
         format_type: Format of frontmatter
     """
-    search_and_output(patterns, name, value, ignore_case, csv_file, format_type)
+    search_and_output(patterns, name, value, ignore_case, regex, csv_file, format_type)
 
 
 def create_parser():
@@ -140,6 +142,11 @@ def create_parser():
         action='store_true',
         help='Case-insensitive matching (default: false)'
     )
+    search_parser.add_argument(
+        '--regex',
+        action='store_true',
+        help='Use regex pattern matching for values (default: false)'
+    )
     search_parser.add_argument('--csv', dest='csv_file', help='Output to CSV file')
     
     return parser
@@ -167,6 +174,7 @@ def main():
             name=args.name,
             value=args.value,
             ignore_case=args.ignore_case,
+            regex=args.regex,
             csv_file=args.csv_file,
             format_type=args.format
         )
