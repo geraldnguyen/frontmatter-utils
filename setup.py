@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="fmu",
+    name="frontmatter-utils",
     version="0.4.0",
     author="Gerald Nguyen The Huy",
     author_email="",
