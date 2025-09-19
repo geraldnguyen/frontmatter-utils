@@ -64,7 +64,7 @@ Save all dependencies in a requirements.txt file
 
 Create or update extensive unit tests for both the library mode and CLI modes. 
 
-Update README file with comprehensive instruction on getting started and how to use the library and CLI
+Update README file with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI
 
 
 
