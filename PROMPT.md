@@ -40,6 +40,33 @@ Create or update extensive unit tests for both the library mode and CLI modes.
 
 Update README file with comprehensive instruction on getting started and how to use the library and CLI
 
+# Version 0.3.0
+
+Add a new capability/command: Validation:
+
+Support a new command "validate [patterns]". This command supports the following options:
+- "--exist [frontmatter]": Can appear multiple times. If specify, require the present of the stated front matter. 
+- "--not [fronmatter]": Can appear multiple times. If specify, the stated front matter must not be present
+- "--eq [frontmatter] [value]": Can appear multiple times. If specify, the front matter must exist and the front matter's value must equal to the provided value
+- "--ne [frontmatter] [value]": Can appear multiple times. If specify, the front matter must exist and the front matter's value must not equal to the provided value
+- "--contain [frontmatter] [value]": Can appear multiple times. If specify, the front matter must exist and the front matter must be an array and one of its values must be equal to the provided value
+- "--not-contain [frontmatter] [value]": Can appear multiple times. If specify, the front matter must exist and the front matter must be an array and none of its values is equal to the provided value
+- "--match [frontmatter] [regex]": Can appear multiple times. If specify, the front matter must exist and the front matter's value must match the provided regex
+- "--not-match [frontmatter] [regex]": Can appear multiple times. If specify, the front matter must exist and the front matter's value must not match the provided regex
+- "--ignore-case [true|false]": default to false. Determine if the name and value matching should be case-sensitive or case-insensitive
+- "--csv [file path]": optional. If provided, output the search results to the specified CSV file. The CSV file should contain columns for file path, front matter name, front matter value, and the reason for failure. The CSV contains column headings. If not provided, output each failed validation in the following format: [file path]:\n- \t[front matter name]: [front matter value] --> [failure reason]
+
+There may be multiple validations per front matter and per input file
+
+Update or expose correcting library function to support the above changes in CLI.
+
+Save all dependencies in a requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README file with comprehensive instruction on getting started and how to use the library and CLI
+
+
 
 # Future versions -- do not execute unless explicitly prompt
 
