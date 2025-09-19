@@ -1,6 +1,8 @@
 name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
 
-on: push
+on:
+  release:
+    types: [published, prereleased]
 
 jobs:
   build:
@@ -32,7 +34,7 @@ jobs:
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
-    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    if: github.event.release.published && !github.event.release.prerelease
     needs:
     - build
     runs-on: ubuntu-latest
@@ -53,6 +55,7 @@ jobs:
 
   publish-to-testpypi:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
+    if: github.event.release.prerelease
     needs:
     - build
     runs-on: ubuntu-latest
