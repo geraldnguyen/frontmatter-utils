@@ -217,7 +217,7 @@ def create_parser():
     # Update command
     update_parser = subparsers.add_parser('update', help='Update frontmatter fields')
     update_parser.add_argument('patterns', nargs='+', help='Glob patterns or file paths')
-    update_parser.add_argument('--frontmatter', required=True, help='Name of frontmatter field to update')
+    update_parser.add_argument('--name', required=True, help='Name of frontmatter field to update')
     
     # Update operation options
     update_parser.add_argument(
@@ -390,7 +390,7 @@ def main():
             sys.exit(1)
         cmd_update(
             patterns=args.patterns,
-            frontmatter_name=args.frontmatter,
+            frontmatter_name=args.name,
             operations=operations,
             deduplication=(args.deduplication == 'true'),
             format_type=args.format

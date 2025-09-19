@@ -159,38 +159,38 @@ fmu validate "blog/*.md" \
 
 ```bash
 # Transform case of frontmatter values
-fmu update "*.md" --frontmatter title --case "Title Case"
-fmu update "*.md" --frontmatter author --case lower
+fmu update "*.md" --name title --case "Title Case"
+fmu update "*.md" --name author --case lower
 
 # Replace values
-fmu update "*.md" --frontmatter status --replace draft published
-fmu update "*.md" --frontmatter category --replace "old-name" "new-name"
+fmu update "*.md" --name status --replace draft published
+fmu update "*.md" --name category --replace "old-name" "new-name"
 
 # Case-insensitive replacement
-fmu update "*.md" --frontmatter tags --replace Python python --ignore-case
+fmu update "*.md" --name tags --replace Python python --ignore-case
 
 # Regex-based replacement
-fmu update "*.md" --frontmatter content --replace "TODO:.*" "DONE" --regex
+fmu update "*.md" --name content --replace "TODO:.*" "DONE" --regex
 
 # Remove specific values
-fmu update "*.md" --frontmatter tags --remove "deprecated"
-fmu update "*.md" --frontmatter status --remove "draft"
+fmu update "*.md" --name tags --remove "deprecated"
+fmu update "*.md" --name status --remove "draft"
 
 # Remove with regex patterns
-fmu update "*.md" --frontmatter tags --remove "^test.*" --regex
+fmu update "*.md" --name tags --remove "^test.*" --regex
 
 # Multiple operations (applied in sequence)
-fmu update "*.md" --frontmatter tags \
+fmu update "*.md" --name tags \
   --replace python programming \
   --remove deprecated \
   --case lower
 
 # Disable deduplication (enabled by default for arrays)
-fmu update "*.md" --frontmatter tags --deduplication false --case lower
+fmu update "*.md" --name tags --deduplication false --case lower
 
 # Complex update with multiple operations
 fmu update "blog/*.md" \
-  --frontmatter tags \
+  --name tags \
   --case lower \
   --replace "javascript" "js" \
   --replace "python" "py" \
@@ -355,7 +355,7 @@ Update frontmatter fields in files with various transformations.
 - `PATTERNS`: One or more glob patterns, file paths, or directory paths
 
 **Required Options:**
-- `--frontmatter FIELD`: **Required.** Name of the frontmatter field to update
+- `--name FIELD`: **Required.** Name of the frontmatter field to update
 
 **Update Operations:**
 - `--case CASE_TYPE`: Transform case of values. Options: `upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`
@@ -372,39 +372,39 @@ Update frontmatter fields in files with various transformations.
 **Examples:**
 ```bash
 # Transform case of values
-fmu update "*.md" --frontmatter title --case "Title Case"
-fmu update "*.md" --frontmatter author --case lower
-fmu update "*.md" --frontmatter tags --case kebab-case
+fmu update "*.md" --name title --case "Title Case"
+fmu update "*.md" --name author --case lower
+fmu update "*.md" --name tags --case kebab-case
 
 # Replace values (substring replacement)
-fmu update "*.md" --frontmatter status --replace draft published
-fmu update "*.md" --frontmatter category --replace "old-name" "new-name"
+fmu update "*.md" --name status --replace draft published
+fmu update "*.md" --name category --replace "old-name" "new-name"
 
 # Case-insensitive replacement
-fmu update "*.md" --frontmatter tags --replace Python python --ignore-case
+fmu update "*.md" --name tags --replace Python python --ignore-case
 
 # Regex-based replacement
-fmu update "*.md" --frontmatter content --replace "TODO:.*" "DONE" --regex
+fmu update "*.md" --name content --replace "TODO:.*" "DONE" --regex
 
 # Remove specific values
-fmu update "*.md" --frontmatter tags --remove "deprecated"
-fmu update "*.md" --frontmatter status --remove "draft"
+fmu update "*.md" --name tags --remove "deprecated"
+fmu update "*.md" --name status --remove "draft"
 
 # Remove with regex patterns
-fmu update "*.md" --frontmatter tags --remove "^test.*" --regex
+fmu update "*.md" --name tags --remove "^test.*" --regex
 
 # Multiple operations (applied in sequence: case, replace, remove, then deduplication)
-fmu update "*.md" --frontmatter tags \
+fmu update "*.md" --name tags \
   --case lower \
   --replace python programming \
   --remove deprecated
 
 # Disable deduplication
-fmu update "*.md" --frontmatter tags --deduplication false --case lower
+fmu update "*.md" --name tags --deduplication false --case lower
 
 # Complex update example
 fmu update "blog/*.md" \
-  --frontmatter tags \
+  --name tags \
   --case lower \
   --replace "javascript" "js" \
   --replace "python" "py" \

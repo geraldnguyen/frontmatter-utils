@@ -260,7 +260,7 @@ Another test document.""")
         
         self.assertIn("No changes to 'nonexistent'", output)
 
-    @patch('sys.argv', ['fmu', 'update', '/tmp/test.md', '--frontmatter', 'title', '--case', 'upper'])
+    @patch('sys.argv', ['fmu', 'update', '/tmp/test.md', '--name', 'title', '--case', 'upper'])
     def test_main_update_basic(self):
         """Test main function with basic update command."""
         # Create a temporary test file
@@ -279,7 +279,7 @@ Content here.""")
             if os.path.exists(test_file):
                 os.remove(test_file)
 
-    @patch('sys.argv', ['fmu', 'update', '/tmp/test.md', '--frontmatter', 'title'])
+    @patch('sys.argv', ['fmu', 'update', '/tmp/test.md', '--name', 'title'])
     def test_main_update_no_operations(self):
         """Test main function with update command but no operations."""
         # Create a temporary test file
