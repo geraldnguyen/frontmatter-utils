@@ -26,7 +26,19 @@ Create extensive unit tests for both the library mode and CLI modes.
 
 Create comprehensive README file with instruction on getting started and how to use the library and CLI
 
-Save this prompt verbatim in a PROMPT.md file under version heading 
+# Version 0.2.0
+
+Enhance the search capability with the following:
+- Support searching values within an array front matter: if the front matter is an array and a "--value" is provided, match each element of the front matters values with search value. If the front matter is a scalar value and a "--value" is provided, continue matching the front matter's whole value with the search value. 
+- Add "--regex [true|false]" option: default to false. Determine how the value-matching is performed. Document the flavour of regex supported in the README and help text.
+
+Update or expose correcting library function to support the above changes in CLI.
+
+Save all dependencies in a requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README file with comprehensive instruction on getting started and how to use the library and CLI
 
 
 # Future versions -- do not execute unless explicitly prompt
