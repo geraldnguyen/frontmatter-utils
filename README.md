@@ -8,6 +8,8 @@ A Python library and CLI tool for parsing and searching front matter in files.
 - **CLI Mode**: Command-line interface for batch operations
 - **YAML Support**: Parse YAML frontmatter (default format)
 - **Flexible Search**: Search by field name and optionally by value
+- **Array Search**: Search within array/list frontmatter values
+- **Regex Support**: Use regular expressions for value matching
 - **Case Sensitivity**: Support for case-sensitive or case-insensitive matching
 - **Multiple Output Formats**: Console output or CSV export
 - **Glob Pattern Support**: Process multiple files using glob patterns
@@ -43,6 +45,16 @@ print(f"Content: {content}")
 results = search_frontmatter(['*.md'], 'author', 'John Doe')
 for file_path, field_name, field_value in results:
     print(f"{file_path}: {field_name} = {field_value}")
+
+# Search within array values
+results = search_frontmatter(['*.md'], 'tags', 'python')
+for file_path, field_name, field_value in results:
+    print(f"{file_path}: Found 'python' in {field_name} = {field_value}")
+
+# Use regex for pattern matching
+results = search_frontmatter(['*.md'], 'title', r'^Guide.*', regex=True)
+for file_path, field_name, field_value in results:
+    print(f"{file_path}: {field_name} matches pattern = {field_value}")
 ```
 
 ### CLI Usage
@@ -151,7 +163,8 @@ Search for specific frontmatter fields.
 **Options:**
 - `--name NAME`: **Required.** Name of the frontmatter field to search for
 - `--value VALUE`: Optional. Value of the frontmatter to match
-- `--ignore-case [true|false]`: Case-insensitive matching (default: false)
+- `--ignore-case`: Case-insensitive matching (default: false)
+- `--regex`: Use regex pattern matching for values (default: false)
 - `--csv FILE`: Optional. Output results to specified CSV file
 
 **Examples:**
@@ -164,6 +177,18 @@ fmu search "*.md" --name author --value "John Doe"
 
 # Case-insensitive search
 fmu search "*.md" --name category --value "programming" --ignore-case
+
+# Search for 'python' in tags array
+fmu search "*.md" --name tags --value "python"
+
+# Regex search for tags ending with 'ing'
+fmu search "*.md" --name tags --value "ing$" --regex
+
+# Regex search for titles starting with "Guide"
+fmu search "*.md" --name title --value "^Guide" --regex
+
+# Case-insensitive regex search
+fmu search "*.md" --name author --value "john.*doe" --regex --ignore-case
 
 # Export to CSV
 fmu search "*.md" --name tags --csv tags_report.csv
@@ -238,7 +263,7 @@ Extract only the content (without frontmatter) from a string.
 
 ### Search Functions
 
-#### `search_frontmatter(patterns, name, value=None, ignore_case=False, format_type='yaml')`
+#### `search_frontmatter(patterns, name, value=None, ignore_case=False, regex=False, format_type='yaml')`
 Search for frontmatter in files.
 
 **Parameters:**
@@ -246,10 +271,15 @@ Search for frontmatter in files.
 - `name` (str): Frontmatter field name to search for
 - `value` (Optional[str]): Value to match (optional)
 - `ignore_case` (bool): Case-insensitive matching (default: False)
+- `regex` (bool): Use regex pattern matching for values (default: False)
 - `format_type` (str): Format type (default: 'yaml')
 
 **Returns:**
 - `List[Tuple[str, str, Any]]`: List of (file_path, field_name, field_value)
+
+**Enhanced Features (v0.2.0):**
+- **Array Matching**: When searching array/list frontmatter fields, each element is checked against the search value
+- **Regex Support**: Use regular expressions for flexible pattern matching (Python's `re` module)
 
 ## File Format Support
 
@@ -274,6 +304,51 @@ Future versions may support:
 - TOML frontmatter
 - JSON frontmatter  
 - INI frontmatter
+
+## Regex Support
+
+Version 0.2.0 introduces regex pattern matching for value searches using Python's `re` module.
+
+### Supported Regex Features
+
+- **Basic patterns**: `python`, `test`, etc.
+- **Anchors**: `^start`, `end$`, `^exact$`
+- **Character classes**: `[abc]`, `[a-z]`, `\d`, `\w`, `\s`
+- **Quantifiers**: `*`, `+`, `?`, `{n}`, `{n,m}`
+- **Groups**: `(pattern)`, `(?:pattern)`
+- **Alternation**: `pattern1|pattern2`
+- **Case-insensitive**: Use `--ignore-case` flag
+
+### Regex Examples
+
+```bash
+# Find titles starting with "Guide" or "Tutorial"
+fmu search "*.md" --name title --value "^(Guide|Tutorial)" --regex
+
+# Find tags containing digits
+fmu search "*.md" --name tags --value "\d" --regex
+
+# Find authors with names ending in "son"
+fmu search "*.md" --name author --value "son$" --regex --ignore-case
+
+# Find categories with 2-4 characters
+fmu search "*.md" --name category --value "^.{2,4}$" --regex
+```
+
+### Array + Regex Combination
+
+When using regex with array fields, the pattern is matched against each array element:
+
+```yaml
+---
+tags: [python3, javascript, html5, css3]
+---
+```
+
+```bash
+# Matches both "python3" and "html5" (numbers at end)
+fmu search "file.md" --name tags --value "\d+$" --regex
+```
 
 ## Error Handling
 
@@ -314,6 +389,26 @@ python -m pytest tests/test_cli.py
 MIT License - see LICENSE file for details.
 
 ## Changelog
+
+### Version 0.2.0
+
+- **Enhanced search capabilities**
+  - Array/list value matching: Search within array frontmatter fields
+  - Regex pattern matching: Use regular expressions for flexible value search
+  - Support for both scalar and array field searches
+- **New CLI options**
+  - `--regex` flag for enabling regex pattern matching
+  - Improved help documentation with regex examples
+- **Library API enhancements**
+  - Updated `search_frontmatter()` function with `regex` parameter
+  - Backward compatible with existing code
+- **Comprehensive testing**
+  - Added tests for array value matching
+  - Added tests for regex functionality
+  - Added CLI tests for new features
+- **Documentation updates**
+  - Detailed regex support documentation
+  - Enhanced examples and usage patterns
 
 ### Version 0.1.0
 
