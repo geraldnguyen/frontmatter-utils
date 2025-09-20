@@ -85,6 +85,16 @@ Another test document.""")
         """Test title case transformation."""
         self.assertEqual(transform_case("hello world", "Title Case"), "Hello World")
 
+    def test_transform_case_title_contractions(self):
+        """Test title case transformation with contractions (Version 0.8.0 fix)."""
+        # Test the specific bug cases mentioned in the requirements
+        self.assertEqual(transform_case("can't", "Title Case"), "Can't")
+        self.assertEqual(transform_case("aren't", "Title Case"), "Aren't")
+        self.assertEqual(transform_case("don't", "Title Case"), "Don't")
+        self.assertEqual(transform_case("won't", "Title Case"), "Won't")
+        # Test multiple words with contractions
+        self.assertEqual(transform_case("i can't do this", "Title Case"), "I Can't Do This")
+
     def test_transform_case_snake_case(self):
         """Test snake_case transformation."""
         self.assertEqual(transform_case("Hello World", "snake_case"), "hello_world")
@@ -279,7 +289,7 @@ Content here.""")
             if os.path.exists(test_file):
                 os.remove(test_file)
 
-    @patch('sys.argv', ['fmu', 'update', '/tmp/test.md', '--name', 'title'])
+    @patch('sys.argv', ['fmu', 'update', '/tmp/test.md', '--name', 'title', '--deduplication', 'false'])
     def test_main_update_no_operations(self):
         """Test main function with update command but no operations."""
         # Create a temporary test file
@@ -294,6 +304,28 @@ Content here.""")
         try:
             with self.assertRaises(SystemExit):
                 main()
+        finally:
+            if os.path.exists(test_file):
+                os.remove(test_file)
+
+    @patch('sys.argv', ['fmu', 'update', '/tmp/test_dedup.md', '--name', 'tags', '--deduplication', 'true'])
+    def test_main_update_deduplication_only(self):
+        """Test main function with deduplication as the only operation (Version 0.8.0 fix)."""
+        # Create a temporary test file with duplicates
+        test_file = '/tmp/test_dedup.md'
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+tags: ["tag1", "tag2", "tag1", "tag3", "tag2"]
+---
+
+Content here.""")
+        
+        try:
+            # This should succeed (not raise SystemExit) in Version 0.8.0
+            output = self.capture_output(main)
+            self.assertIn("Updated 'tags'", output)
+        except SystemExit:
+            self.fail("main() raised SystemExit when deduplication should be a valid operation")
         finally:
             if os.path.exists(test_file):
                 os.remove(test_file)

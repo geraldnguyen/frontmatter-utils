@@ -352,6 +352,56 @@ This is the content of the second post.""")
         self.assertEqual(failures[0][1], 'title')
         self.assertIn("does not exist", failures[0][3])
 
+    def test_validate_not_empty_pass(self):
+        """Test not-empty validation passes for non-empty arrays."""
+        validations = [{'type': 'not-empty', 'field': 'tags'}]
+        failures = validate_frontmatter([self.file1], validations)
+        self.assertEqual(len(failures), 0)
+
+    def test_validate_not_empty_fail_empty_array(self):
+        """Test not-empty validation fails for empty arrays."""
+        # Create a test file with empty array
+        test_file = os.path.join(self.temp_dir, 'empty_array.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: "Test"
+tags: []
+---
+
+Content here.""")
+        
+        validations = [{'type': 'not-empty', 'field': 'tags'}]
+        failures = validate_frontmatter([test_file], validations)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("array is empty", failures[0][3])
+
+    def test_validate_not_empty_fail_non_array(self):
+        """Test not-empty validation fails for non-array fields."""
+        validations = [{'type': 'not-empty', 'field': 'title'}]
+        failures = validate_frontmatter([self.file1], validations)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("is not an array", failures[0][3])
+
+    def test_validate_list_size_pass(self):
+        """Test list-size validation passes when within range."""
+        validations = [{'type': 'list-size', 'field': 'tags', 'min': 1, 'max': 5}]
+        failures = validate_frontmatter([self.file1], validations)
+        self.assertEqual(len(failures), 0)
+
+    def test_validate_list_size_fail_too_small(self):
+        """Test list-size validation fails when array too small."""
+        validations = [{'type': 'list-size', 'field': 'tags', 'min': 5, 'max': 10}]
+        failures = validate_frontmatter([self.file1], validations)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("should have between 5 and 10", failures[0][3])
+
+    def test_validate_list_size_fail_non_array(self):
+        """Test list-size validation fails for non-array fields."""
+        validations = [{'type': 'list-size', 'field': 'title', 'min': 1, 'max': 3}]
+        failures = validate_frontmatter([self.file1], validations)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("is not an array", failures[0][3])
+
 
 if __name__ == '__main__':
     unittest.main()
