@@ -14,7 +14,11 @@ from fmu.specs import (
     convert_read_args_to_options,
     convert_search_args_to_options,
     convert_validate_args_to_options,
-    convert_update_args_to_options
+    convert_update_args_to_options,
+    load_specs_file,
+    format_command_text,
+    execute_specs_file,
+    print_execution_stats
 )
 from fmu.cli import main
 
@@ -31,6 +35,12 @@ class TestSpecsFunctionality(unittest.TestCase):
         """Clean up test files."""
         if os.path.exists(self.specs_file):
             os.remove(self.specs_file)
+        # Clean up any additional files in test directory
+        for root, dirs, files in os.walk(self.test_dir, topdown=False):
+            for file in files:
+                os.remove(os.path.join(root, file))
+            for dir in dirs:
+                os.rmdir(os.path.join(root, dir))
         os.rmdir(self.test_dir)
 
     def test_save_specs_file_new_file(self):
@@ -232,6 +242,206 @@ class TestSpecsFunctionality(unittest.TestCase):
         
         # Clean up
         os.remove('/tmp/test_specs.yaml')
+
+    def test_load_specs_file_valid(self):
+        """Test loading a valid specs file."""
+        # Create a test specs file
+        specs_data = {
+            'commands': [
+                {
+                    'command': 'read',
+                    'description': 'test read',
+                    'patterns': ['*.md']
+                }
+            ]
+        }
+        
+        with open(self.specs_file, 'w') as f:
+            yaml.dump(specs_data, f)
+        
+        loaded_data = load_specs_file(self.specs_file)
+        self.assertEqual(loaded_data, specs_data)
+
+    def test_load_specs_file_not_found(self):
+        """Test loading non-existent specs file."""
+        with self.assertRaises(FileNotFoundError):
+            load_specs_file('/nonexistent/file.yaml')
+
+    def test_load_specs_file_invalid_yaml(self):
+        """Test loading specs file with invalid YAML."""
+        with open(self.specs_file, 'w') as f:
+            f.write('invalid: yaml: content: [')
+        
+        with self.assertRaises(yaml.YAMLError):
+            load_specs_file(self.specs_file)
+
+    def test_format_command_text_read(self):
+        """Test formatting read command text."""
+        command_entry = {
+            'command': 'read',
+            'description': 'test read',
+            'patterns': ['*.md', 'docs/*.md'],
+            'output': 'frontmatter',
+            'skip_heading': True
+        }
+        
+        result = format_command_text(command_entry)
+        expected = 'fmu read "*.md" "docs/*.md" --output frontmatter --skip-heading'
+        self.assertEqual(result, expected)
+
+    def test_format_command_text_search(self):
+        """Test formatting search command text."""
+        command_entry = {
+            'command': 'search',
+            'description': 'test search',
+            'patterns': ['*.md'],
+            'name': 'tags',
+            'value': 'test',
+            'regex': True,
+            'csv': 'results.csv'
+        }
+        
+        result = format_command_text(command_entry)
+        expected = 'fmu search "*.md" --name tags --value test --regex --csv results.csv'
+        self.assertEqual(result, expected)
+
+    def test_format_command_text_validate(self):
+        """Test formatting validate command text."""
+        command_entry = {
+            'command': 'validate',
+            'description': 'test validate',
+            'patterns': ['*.md'],
+            'exist': ['title', 'author'],
+            'eq': ['status published'],
+            'ignore_case': True
+        }
+        
+        result = format_command_text(command_entry)
+        expected = 'fmu validate "*.md" --exist title --exist author --eq status published --ignore-case'
+        self.assertEqual(result, expected)
+
+    def test_format_command_text_update(self):
+        """Test formatting update command text."""
+        command_entry = {
+            'command': 'update',
+            'description': 'test update',
+            'patterns': ['*.md'],
+            'name': 'title',
+            'case': 'Title Case',
+            'replace': ['old new'],
+            'remove': ['test'],
+            'regex': True
+        }
+        
+        result = format_command_text(command_entry)
+        expected = "fmu update \"*.md\" --name title --case 'Title Case' --replace old new --remove test --regex"
+        self.assertEqual(result, expected)
+
+    def test_execute_specs_file_empty(self):
+        """Test executing empty specs file."""
+        specs_data = {'commands': []}
+        
+        with open(self.specs_file, 'w') as f:
+            yaml.dump(specs_data, f)
+        
+        output = self.capture_output(lambda: execute_specs_file(self.specs_file, skip_confirmation=True))
+        self.assertIn('No commands found in specs file.', output)
+
+    def test_execute_specs_file_with_commands(self):
+        """Test executing specs file with commands."""
+        # Create a test markdown file
+        test_md_file = os.path.join(self.test_dir, 'test.md')
+        with open(test_md_file, 'w') as f:
+            f.write('---\ntitle: Test\ntags: [test]\n---\nContent')
+        
+        specs_data = {
+            'commands': [
+                {
+                    'command': 'read',
+                    'description': 'read test file',
+                    'patterns': [test_md_file],
+                    'output': 'frontmatter'
+                }
+            ]
+        }
+        
+        with open(self.specs_file, 'w') as f:
+            yaml.dump(specs_data, f)
+        
+        stats = execute_specs_file(self.specs_file, skip_confirmation=True)
+        
+        # Verify statistics
+        self.assertEqual(stats['total_commands'], 1)
+        self.assertEqual(stats['executed_commands'], 1)
+        self.assertEqual(stats['failed_commands'], 0)
+        self.assertEqual(stats['command_counts']['read'], 1)
+        self.assertGreater(stats['total_elapsed_time'], 0)
+
+    def test_print_execution_stats(self):
+        """Test printing execution statistics."""
+        stats = {
+            'executed_commands': 3,
+            'total_elapsed_time': 1.5,
+            'total_execution_time': 1.2,
+            'average_execution_time': 0.4,
+            'command_counts': {'read': 1, 'search': 1, 'validate': 1, 'update': 0},
+            'failed_commands': 1
+        }
+        
+        output = self.capture_output(lambda: print_execution_stats(stats))
+        
+        self.assertIn('Number of commands executed: 3', output)
+        self.assertIn('Total elapsed time: 1.50 seconds', output)
+        self.assertIn('Total execution time: 1.20 seconds', output)
+        self.assertIn('Average execution time per command: 0.40 seconds', output)
+        self.assertIn('read: 1', output)
+        self.assertIn('search: 1', output)
+        self.assertIn('validate: 1', output)
+        self.assertIn('update: 0', output)
+        self.assertIn('Failed commands: 1', output)
+
+    @patch('sys.argv', ['fmu', 'execute', '/tmp/test_specs.yaml', '--yes'])
+    def test_main_execute_command(self):
+        """Test main function with execute command."""
+        # Create a simple specs file
+        specs_data = {
+            'commands': [
+                {
+                    'command': 'read',
+                    'description': 'test read',
+                    'patterns': ['/tmp/nonexistent.md'],
+                    'output': 'frontmatter'
+                }
+            ]
+        }
+        
+        with open('/tmp/test_specs.yaml', 'w') as f:
+            yaml.dump(specs_data, f)
+        
+        # Since the file doesn't exist, this should show error handling
+        output = self.capture_output_with_stderr(main)
+        
+        # Should contain execution elements
+        self.assertIn('fmu read', output)
+        self.assertIn('EXECUTION STATISTICS', output)
+        
+        # Clean up
+        os.remove('/tmp/test_specs.yaml')
+
+    def capture_output_with_stderr(self, func):
+        """Capture both stdout and stderr from a function."""
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = captured_output = StringIO()
+        sys.stderr = captured_error = StringIO()
+        try:
+            func()
+        except SystemExit:
+            pass  # Handle sys.exit calls
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+        return captured_output.getvalue() + captured_error.getvalue()
 
 
 if __name__ == '__main__':

@@ -42,6 +42,7 @@ def cmd_help():
     print("  search PATTERNS   Search for specific frontmatter fields")
     print("  validate PATTERNS Validate frontmatter fields against rules")
     print("  update PATTERNS   Update frontmatter fields")
+    print("  execute SPECS     Execute commands from specs file")
     print()
     print("All commands support --save-specs option to save command configuration:")
     print("  --save-specs DESCRIPTION SPECS_FILE")
@@ -203,6 +204,27 @@ def cmd_update(
     update_and_output(patterns, frontmatter_name, operations, deduplication, format_type)
 
 
+def cmd_execute(specs_file: str, skip_confirmation: bool = False):
+    """
+    Handle execute command.
+    
+    Args:
+        specs_file: Path to the specs file
+        skip_confirmation: Whether to skip user confirmation
+    """
+    from .specs import execute_specs_file, print_execution_stats
+    
+    try:
+        stats = execute_specs_file(specs_file, skip_confirmation)
+        print_execution_stats(stats)
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error executing specs file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def create_parser():
     """Create argument parser."""
     parser = argparse.ArgumentParser(
@@ -347,6 +369,15 @@ def create_parser():
         help='Save command specs to YAML file'
     )
     
+    # Execute command
+    execute_parser = subparsers.add_parser('execute', help='Execute commands from specs file')
+    execute_parser.add_argument('specs_file', help='Path to YAML specs file')
+    execute_parser.add_argument(
+        '--yes',
+        action='store_true',
+        help='Skip all confirmations and execute all commands'
+    )
+    
     return parser
 
 
@@ -487,6 +518,11 @@ def main():
             format_type=args.format,
             save_specs=args.save_specs if hasattr(args, 'save_specs') else None,
             args=args
+        )
+    elif args.command == 'execute':
+        cmd_execute(
+            specs_file=args.specs_file,
+            skip_confirmation=args.yes
         )
     elif args.command is None:
         # No command provided, show help
