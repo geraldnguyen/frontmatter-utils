@@ -10,6 +10,13 @@ from .core import parse_file, get_files_from_patterns
 from .search import search_and_output
 from .validation import validate_and_output
 from .update import update_and_output
+from .specs import (
+    save_specs_file, 
+    convert_read_args_to_options,
+    convert_search_args_to_options,
+    convert_validate_args_to_options,
+    convert_update_args_to_options
+)
 
 
 def cmd_version():
@@ -35,11 +42,16 @@ def cmd_help():
     print("  search PATTERNS   Search for specific frontmatter fields")
     print("  validate PATTERNS Validate frontmatter fields against rules")
     print("  update PATTERNS   Update frontmatter fields")
+    print("  execute SPECS     Execute commands from specs file")
+    print()
+    print("All commands support --save-specs option to save command configuration:")
+    print("  --save-specs DESCRIPTION SPECS_FILE")
+    print("                    Save command and options to YAML specs file")
     print()
     print("For command-specific help, use: fmu COMMAND --help")
 
 
-def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = False, format_type: str = "yaml"):
+def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = False, format_type: str = "yaml", save_specs=None):
     """
     Handle read command.
     
@@ -48,7 +60,19 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
         output: What to output ('frontmatter', 'content', 'both')
         skip_heading: Whether to skip section headings
         format_type: Format of frontmatter
+        save_specs: Tuple of (description, specs_file) for saving specs
     """
+    # Save specs if requested
+    if save_specs:
+        description, specs_file = save_specs
+        options = convert_read_args_to_options(type('Args', (), {
+            'output': output,
+            'skip_heading': skip_heading
+        })())
+        save_specs_file(specs_file, 'read', description, patterns, options)
+        print(f"Specs saved to {specs_file}")
+        return
+    
     files = get_files_from_patterns(patterns)
     
     for file_path in files:
@@ -83,7 +107,8 @@ def cmd_search(
     ignore_case: bool = False,
     regex: bool = False,
     csv_file: str = None,
-    format_type: str = "yaml"
+    format_type: str = "yaml",
+    save_specs=None
 ):
     """
     Handle search command.
@@ -96,7 +121,22 @@ def cmd_search(
         regex: Whether to use regex pattern matching for values
         csv_file: Optional CSV file for output
         format_type: Format of frontmatter
+        save_specs: Tuple of (description, specs_file) for saving specs
     """
+    # Save specs if requested
+    if save_specs:
+        description, specs_file = save_specs
+        options = convert_search_args_to_options(type('Args', (), {
+            'name': name,
+            'value': value,
+            'ignore_case': ignore_case,
+            'regex': regex,
+            'csv_file': csv_file
+        })())
+        save_specs_file(specs_file, 'search', description, patterns, options)
+        print(f"Specs saved to {specs_file}")
+        return
+    
     search_and_output(patterns, name, value, ignore_case, regex, csv_file, format_type)
 
 
@@ -105,7 +145,9 @@ def cmd_validate(
     validations: List[Dict[str, Any]],
     ignore_case: bool = False,
     csv_file: str = None,
-    format_type: str = "yaml"
+    format_type: str = "yaml",
+    save_specs=None,
+    args=None
 ):
     """
     Handle validate command.
@@ -116,7 +158,17 @@ def cmd_validate(
         ignore_case: Whether to perform case-insensitive matching
         csv_file: Optional CSV file for output
         format_type: Format of frontmatter
+        save_specs: Tuple of (description, specs_file) for saving specs
+        args: Original arguments object for specs conversion
     """
+    # Save specs if requested
+    if save_specs and args:
+        description, specs_file = save_specs
+        options = convert_validate_args_to_options(args)
+        save_specs_file(specs_file, 'validate', description, patterns, options)
+        print(f"Specs saved to {specs_file}")
+        return
+    
     validate_and_output(patterns, validations, ignore_case, csv_file, format_type)
 
 
@@ -125,7 +177,9 @@ def cmd_update(
     frontmatter_name: str,
     operations: List[Dict[str, Any]],
     deduplication: bool = True,
-    format_type: str = "yaml"
+    format_type: str = "yaml",
+    save_specs=None,
+    args=None
 ):
     """
     Handle update command.
@@ -136,8 +190,39 @@ def cmd_update(
         operations: List of update operations to apply
         deduplication: Whether to deduplicate array values
         format_type: Format of frontmatter
+        save_specs: Tuple of (description, specs_file) for saving specs
+        args: Original arguments object for specs conversion
     """
+    # Save specs if requested
+    if save_specs and args:
+        description, specs_file = save_specs
+        options = convert_update_args_to_options(args)
+        save_specs_file(specs_file, 'update', description, patterns, options)
+        print(f"Specs saved to {specs_file}")
+        return
+    
     update_and_output(patterns, frontmatter_name, operations, deduplication, format_type)
+
+
+def cmd_execute(specs_file: str, skip_confirmation: bool = False):
+    """
+    Handle execute command.
+    
+    Args:
+        specs_file: Path to the specs file
+        skip_confirmation: Whether to skip user confirmation
+    """
+    from .specs import execute_specs_file, print_execution_stats
+    
+    try:
+        stats = execute_specs_file(specs_file, skip_confirmation)
+        print_execution_stats(stats)
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error executing specs file: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def create_parser():
@@ -175,6 +260,12 @@ def create_parser():
         action='store_true',
         help='Skip section headings (default: false)'
     )
+    read_parser.add_argument(
+        '--save-specs',
+        nargs=2,
+        metavar=('DESCRIPTION', 'SPECS_FILE'),
+        help='Save command specs to YAML file'
+    )
     
     # Search command
     search_parser = subparsers.add_parser('search', help='Search for specific frontmatter fields')
@@ -192,6 +283,12 @@ def create_parser():
         help='Use regex pattern matching for values (default: false)'
     )
     search_parser.add_argument('--csv', dest='csv_file', help='Output to CSV file')
+    search_parser.add_argument(
+        '--save-specs',
+        nargs=2,
+        metavar=('DESCRIPTION', 'SPECS_FILE'),
+        help='Save command specs to YAML file'
+    )
     
     # Validate command
     validate_parser = subparsers.add_parser('validate', help='Validate frontmatter fields against rules')
@@ -213,6 +310,12 @@ def create_parser():
         help='Case-insensitive matching (default: false)'
     )
     validate_parser.add_argument('--csv', dest='csv_file', help='Output to CSV file')
+    validate_parser.add_argument(
+        '--save-specs',
+        nargs=2,
+        metavar=('DESCRIPTION', 'SPECS_FILE'),
+        help='Save command specs to YAML file'
+    )
     
     # Update command
     update_parser = subparsers.add_parser('update', help='Update frontmatter fields')
@@ -258,6 +361,21 @@ def create_parser():
         '--regex',
         action='store_true',
         help='Treat patterns as regex for replacements and removals (default: false)'
+    )
+    update_parser.add_argument(
+        '--save-specs',
+        nargs=2,
+        metavar=('DESCRIPTION', 'SPECS_FILE'),
+        help='Save command specs to YAML file'
+    )
+    
+    # Execute command
+    execute_parser = subparsers.add_parser('execute', help='Execute commands from specs file')
+    execute_parser.add_argument('specs_file', help='Path to YAML specs file')
+    execute_parser.add_argument(
+        '--yes',
+        action='store_true',
+        help='Skip all confirmations and execute all commands'
     )
     
     return parser
@@ -359,7 +477,8 @@ def main():
             patterns=args.patterns,
             output=args.output,
             skip_heading=args.skip_heading,
-            format_type=args.format
+            format_type=args.format,
+            save_specs=args.save_specs if hasattr(args, 'save_specs') else None
         )
     elif args.command == 'search':
         cmd_search(
@@ -369,11 +488,12 @@ def main():
             ignore_case=args.ignore_case,
             regex=args.regex,
             csv_file=args.csv_file,
-            format_type=args.format
+            format_type=args.format,
+            save_specs=args.save_specs if hasattr(args, 'save_specs') else None
         )
     elif args.command == 'validate':
         validations = _parse_validation_args(args)
-        if not validations:
+        if not validations and not (hasattr(args, 'save_specs') and args.save_specs):
             print("Error: No validation rules specified", file=sys.stderr)
             sys.exit(1)
         cmd_validate(
@@ -381,11 +501,13 @@ def main():
             validations=validations,
             ignore_case=args.ignore_case,
             csv_file=args.csv_file,
-            format_type=args.format
+            format_type=args.format,
+            save_specs=args.save_specs if hasattr(args, 'save_specs') else None,
+            args=args
         )
     elif args.command == 'update':
         operations = _parse_update_args(args)
-        if not operations:
+        if not operations and not (hasattr(args, 'save_specs') and args.save_specs):
             print("Error: No update operations specified", file=sys.stderr)
             sys.exit(1)
         cmd_update(
@@ -393,7 +515,14 @@ def main():
             frontmatter_name=args.name,
             operations=operations,
             deduplication=(args.deduplication == 'true'),
-            format_type=args.format
+            format_type=args.format,
+            save_specs=args.save_specs if hasattr(args, 'save_specs') else None,
+            args=args
+        )
+    elif args.command == 'execute':
+        cmd_execute(
+            specs_file=args.specs_file,
+            skip_confirmation=args.yes
         )
     elif args.command is None:
         # No command provided, show help
