@@ -1,0 +1,199 @@
+# Specs File Specification
+
+The specs file format allows you to save and reuse command configurations for the frontmatter-utils CLI. This is useful for storing commonly used commands and their options.
+
+## File Format
+
+The specs file is a YAML file with the following structure:
+
+```yaml
+commands:
+  - command: [command_name]
+    description: [short_description]
+    patterns: [array_of_patterns]
+    [option1]: [option_value]
+    [option2]: [option_value]
+```
+
+## Commands
+
+### Read Command
+
+Saves configuration for parsing files and extracting frontmatter/content.
+
+```yaml
+commands:
+  - command: read
+    description: read blog posts
+    patterns:
+      - "blog/*.md"
+      - "posts/*.md"
+    output: frontmatter
+    skip_heading: true
+```
+
+**Options:**
+- `output`: What to output (`frontmatter`, `content`, or `both`)
+- `skip_heading`: Whether to skip section headings (`true` or `false`)
+
+### Search Command
+
+Saves configuration for searching specific frontmatter fields.
+
+```yaml
+commands:
+  - command: search
+    description: search folk tales
+    patterns:
+      - "stories/*.md"
+    name: tags
+    value: folk-tale
+    regex: false
+    
+  - command: search
+    description: search myths with regex
+    patterns:
+      - "stories/*.md"
+    name: tags
+    value: myth.*
+    regex: true
+    ignore_case: true
+    csv: search_results.csv
+```
+
+**Options:**
+- `name`: Name of frontmatter field to search for (required)
+- `value`: Value to match (optional)
+- `ignore_case`: Case-insensitive matching (`true` or `false`)
+- `regex`: Use regex pattern matching (`true` or `false`)
+- `csv`: Output to CSV file (file path)
+
+### Validate Command
+
+Saves configuration for validating frontmatter fields against rules.
+
+```yaml
+commands:
+  - command: validate
+    description: title required and less than 50 chars
+    patterns:
+      - "*.md"
+    match:
+      - "title ^.{0,50}$"
+    eq:
+      - "status Published"
+    exist:
+      - "author"
+    csv: validation_report.csv
+```
+
+**Options:**
+- `exist`: Array of fields that must exist
+- `not`: Array of fields that must not exist
+- `eq`: Array of "field value" pairs for equality checks
+- `ne`: Array of "field value" pairs for inequality checks
+- `contain`: Array of "field value" pairs for array containment checks
+- `not_contain`: Array of "field value" pairs for array non-containment checks
+- `match`: Array of "field regex" pairs for regex matching
+- `not_match`: Array of "field regex" pairs for regex non-matching
+- `ignore_case`: Case-insensitive matching (`true` or `false`)
+- `csv`: Output to CSV file (file path)
+
+### Update Command
+
+Saves configuration for updating frontmatter fields.
+
+```yaml
+commands:
+  - command: update
+    description: Title case transformation
+    patterns:
+      - "*.md"
+    name: title
+    case: Title Case
+    
+  - command: update
+    description: remove test tags
+    patterns:
+      - "*.md"
+    name: tags
+    remove:
+      - "^test.*"
+    regex: true
+    deduplication: true
+```
+
+**Options:**
+- `name`: Name of frontmatter field to update (required)
+- `deduplication`: Eliminate exact duplicates in array values (`true` or `false`)
+- `case`: Transform case (`upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`)
+- `replace`: Array of "from to" pairs for value replacement
+- `remove`: Array of values to remove
+- `ignore_case`: Ignore case for replacements and removals (`true` or `false`)
+- `regex`: Treat patterns as regex for replacements and removals (`true` or `false`)
+
+## Usage
+
+### Saving Specs
+
+Use the `--save-specs` option with any command to save the command configuration:
+
+```bash
+# Save a read command configuration
+fmu read "*.md" --output frontmatter --save-specs "read blog posts" specs.yaml
+
+# Save a search command configuration  
+fmu search "*.md" --name tags --value folk-tale --save-specs "search folk tales" specs.yaml
+
+# Save a validate command configuration
+fmu validate "*.md" --exist title --match "title ^.{0,50}$" --save-specs "validate titles" specs.yaml
+
+# Save an update command configuration
+fmu update "*.md" --name title --case "Title Case" --save-specs "title case" specs.yaml
+```
+
+### File Behavior
+
+- If the specs file doesn't exist, it will be created
+- If the specs file exists, new commands will be appended to the existing commands array
+- Commands are always appended (no overwriting or merging of existing commands)
+
+### Example Specs File
+
+```yaml
+commands:
+  - command: read
+    description: read all markdown files
+    patterns:
+      - "*.md"
+      - "docs/*.md"
+    output: both
+    
+  - command: search
+    description: find published posts
+    patterns:
+      - "posts/*.md"
+    name: status
+    value: published
+    ignore_case: true
+    
+  - command: validate
+    description: check required fields
+    patterns:
+      - "posts/*.md"
+    exist:
+      - "title"
+      - "author"
+      - "date"
+    match:
+      - "date \\d{4}-\\d{2}-\\d{2}"
+    csv: validation_results.csv
+    
+  - command: update
+    description: standardize tags
+    patterns:
+      - "posts/*.md"
+    name: tags
+    case: lower
+    deduplication: true
+```
