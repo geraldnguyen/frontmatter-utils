@@ -335,14 +335,15 @@ def update_frontmatter(
                     })
                     continue
             
-            results.append({
-                'file_path': file_path,
-                'field': frontmatter_name,
-                'original_value': original_value,
-                'new_value': current_value if frontmatter_name in frontmatter_data else None,
-                'changes_made': changes_made,
-                'reason': 'Updated successfully' if changes_made else 'No changes needed'
-            })
+            if changes_made:
+                results.append({
+                    'file_path': file_path,
+                    'field': frontmatter_name,
+                    'original_value': original_value,
+                    'new_value': current_value if frontmatter_name in frontmatter_data else None,
+                    'changes_made': changes_made,
+                    'reason': 'Updated successfully'
+                })
             
         except Exception as e:
             results.append({
