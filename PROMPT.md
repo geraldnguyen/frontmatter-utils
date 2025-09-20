@@ -92,9 +92,113 @@ Create or update extensive unit tests for both the library mode and CLI modes.
 
 Update README file with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI
 
+
+
+
+# Version 0.5.0 - Create specs file from command
+
+Add a new "--save-specs [short description] [yaml specs file]" option to "Read", "Search", "Validate" and "Update" command. If specified, save the command, patterns, and options to the specified specs file according to the specs file format and semantics detailed below. 
+- If the file does not exist, create it
+- If the file exist, update the file
+- If the command inside the file does not exist, add the new command
+- If the command inside the file already exists, append to the command's values
+
+```
+commands:            # Array of commands, new command are appended to the array
+  - command: [command]
+    description: [short description]
+    [patterns]: [array of patterns]
+    [option 1]: [option value or values, explicit or derived]
+    [option 2]: [option value or values, explicit or derived]
+```
+
+Sample:
+
+```
+commands:
+  - command: read
+    description: read file
+    patterns: [array of patterns]
+    output: frontmatter|content|both
+    skip_heading: true|false
+
+  - command: search
+    description: search folk tales
+    patterns: [array of patterns]
+    name: tags
+    value: folk-tale
+    regex: false
+
+  - command: search
+    description: search myths
+    patterns: [array of patterns]
+    name: tags
+    value: myth.*
+    regex: true
+
+  - command: validate
+    description: title required and less than 50 chars
+    match: title ^.{0,50}$
+    eq: status Published
+    csv: validation_report.csv
+  
+  - command: update
+    description: Title case
+    name: title
+    case: Title case
+
+  - command: update
+    decription: remove draft
+    name: tags
+    remove: "^test.*" 
+    regex: true
+
+```
+
+Update or expose correcting library function to support the above changes in CLI.
+
+Save all dependencies in a requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README file with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI
+Create a SPECS.md file with specification and sample configurations of the specs file
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
+
+# Version 0.6.0 - Execute commands from specs files
+
+Add a new command "execute [specs file]" to execute all commands inside the specs file.
+
+Each command shall execute sequentially, with a print out of the command text e.g. `------------\n[command text]\n------------\n` before the execution.
+
+By default, confirm with user if he/she want to execute the command: `Proceed with the above command? Answer yes or no`.
+
+Add "--yes" option wto skip all confirmations.
+
+When all command completed, print out a simple stats with the following info:
+- Number of commands executed
+- Total elapse time
+- Total execution time (elapse time excluding waiting for user confirmation)
+- Average execution time per command
+- Number of execution per command types e.g. `read: 0, validate: 1, update: 3`
+
+
+Update or expose correcting library function to support the above changes in CLI.
+
+Save all dependencies in a requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README file with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
+
 # Future versions -- do not execute unless explicitly prompt
 
-- lower, upper, capital case
+
 - analyze and summarize
 - trim space, blank line
 - expansive vs collapse e.g array: [value1, value2] vs arrays: - value1, - value2, "string" vs string
@@ -102,3 +206,5 @@ Update README file with comprehensive instruction on getting started and how to 
 -- mapping
 
 -- update spec
+
+update --deduplication is a valid update operation 
