@@ -184,6 +184,64 @@ When all command completed, print out a simple stats with the following info:
 - Average execution time per command
 - Number of execution per command types e.g. `read: 0, validate: 1, update: 3`
 
+Update or expose correcting library function to support the above changes in CLI.
+
+Save all dependencies in a requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README file with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
+
+# Version 0.8.0 - bug fixes and small enhancements
+
+**New validate rule: --not-empty [front matter]**
+
+Can appear multiple times. If specify, require the front matter to be of type array and has at least 1 value.
+
+**New validate rule: --list-size [front matter] [min] [max]**
+
+Can appear multiple times. If specify, require the front matter to be of type array and has values of count between min and max inclusively.
+
+
+**Bug: Update command's `--deduplication true` is a valid update operation** 
+
+Example: fmu update .\content\jokes\**\*.md --name categories --deduplication true
+Expecation: deduplicate all values of front matter "categories"                         
+Actual: "Error: No update operations specified"
+
+
+**Bug: Incorrect capitalization of contraction form**
+
+- Example: "can't": expect "Can't", actual "Can'T"
+- Example: "aren't": expect "Aren't", actual "Aren'T"
+
+**Bug: Arguments to an operation were combined when saved to specs file**
+
+Example: `update --name categories --replace "dad-jokes" "dad jokes"`
+
+Expectation:
+
+```
+commands:
+- command: update
+  name: categories
+  replace:
+  - dad-jokes
+  - dad jokes
+```
+
+Actual:
+
+```
+commands:
+- command: update
+  name: categories
+  replace:
+  - dad-jokes dad jokes
+```
 
 Update or expose correcting library function to support the above changes in CLI.
 
@@ -203,8 +261,6 @@ Update the setup.py file and pyproject.toml with correct version number and othe
 - trim space, blank line
 - expansive vs collapse e.g array: [value1, value2] vs arrays: - value1, - value2, "string" vs string
 -- dry-run
--- mapping
 
--- update spec
 
-update --deduplication is a valid update operation 
+ 
