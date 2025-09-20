@@ -303,6 +303,8 @@ def create_parser():
     validate_parser.add_argument('--not-contain', action='append', nargs=2, metavar=('FIELD', 'VALUE'), dest='not_contain', help='Require array field does not contain value')
     validate_parser.add_argument('--match', action='append', nargs=2, metavar=('FIELD', 'REGEX'), help='Require field matches regex')
     validate_parser.add_argument('--not-match', action='append', nargs=2, metavar=('FIELD', 'REGEX'), dest='not_match', help='Require field does not match regex')
+    validate_parser.add_argument('--not-empty', action='append', help='Require field to be an array with at least 1 value')
+    validate_parser.add_argument('--list-size', action='append', nargs=3, metavar=('FIELD', 'MIN', 'MAX'), help='Require field to be an array with count between min and max inclusively')
     
     validate_parser.add_argument(
         '--ignore-case',
@@ -413,6 +415,12 @@ def _parse_update_args(args) -> List[Dict[str, Any]]:
                 'regex': args.regex
             })
     
+    # Handle --deduplication (deduplication should be considered a valid operation)
+    if hasattr(args, 'deduplication') and args.deduplication == 'true':
+        operations.append({
+            'type': 'deduplication'
+        })
+    
     return operations
 
 
@@ -459,6 +467,22 @@ def _parse_validation_args(args) -> List[Dict[str, Any]]:
     if args.not_match:
         for field, regex in args.not_match:
             validations.append({'type': 'not-match', 'field': field, 'regex': regex})
+    
+    # Handle --not-empty
+    if args.not_empty:
+        for field in args.not_empty:
+            validations.append({'type': 'not-empty', 'field': field})
+    
+    # Handle --list-size
+    if args.list_size:
+        for field, min_str, max_str in args.list_size:
+            try:
+                min_size = int(min_str)
+                max_size = int(max_str)
+                validations.append({'type': 'list-size', 'field': field, 'min': min_size, 'max': max_size})
+            except ValueError:
+                print(f"Error: Invalid list-size parameters. Min and max must be integers: {min_str}, {max_str}", file=sys.stderr)
+                sys.exit(1)
     
     return validations
 

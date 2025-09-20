@@ -56,6 +56,10 @@ def validate_frontmatter(
                     failure = _validate_match(frontmatter, field_name, validation['regex'], ignore_case)
                 elif validation_type == 'not-match':
                     failure = _validate_not_match(frontmatter, field_name, validation['regex'], ignore_case)
+                elif validation_type == 'not-empty':
+                    failure = _validate_not_empty(frontmatter, field_name, ignore_case)
+                elif validation_type == 'list-size':
+                    failure = _validate_list_size(frontmatter, field_name, validation['min'], validation['max'], ignore_case)
                 else:
                     continue
                     
@@ -217,6 +221,39 @@ def _validate_not_match(frontmatter: Dict[str, Any], field_name: str, regex_patt
             return f"Field '{field_name}' value '{field_str}' should not match pattern '{regex_pattern}'"
     except re.error as e:
         return f"Invalid regex pattern '{regex_pattern}': {e}"
+    
+    return None
+
+
+def _validate_not_empty(frontmatter: Dict[str, Any], field_name: str, ignore_case: bool) -> Optional[str]:
+    """Validate that a field is an array and has at least 1 value."""
+    field_value = _get_field_value(frontmatter, field_name, ignore_case)
+    
+    if field_value is None:
+        return f"Field '{field_name}' does not exist (required for not-empty check)"
+    
+    if not isinstance(field_value, list):
+        return f"Field '{field_name}' is not an array (required for not-empty check)"
+    
+    if len(field_value) == 0:
+        return f"Field '{field_name}' array is empty but should contain at least 1 value"
+    
+    return None
+
+
+def _validate_list_size(frontmatter: Dict[str, Any], field_name: str, min_size: int, max_size: int, ignore_case: bool) -> Optional[str]:
+    """Validate that a field is an array and has a count between min and max inclusively."""
+    field_value = _get_field_value(frontmatter, field_name, ignore_case)
+    
+    if field_value is None:
+        return f"Field '{field_name}' does not exist (required for list-size check)"
+    
+    if not isinstance(field_value, list):
+        return f"Field '{field_name}' is not an array (required for list-size check)"
+    
+    actual_size = len(field_value)
+    if actual_size < min_size or actual_size > max_size:
+        return f"Field '{field_name}' array has {actual_size} items but should have between {min_size} and {max_size} items"
     
     return None
 

@@ -142,7 +142,10 @@ def convert_update_args_to_options(args) -> Dict[str, Any]:
         options['case'] = args.case
         
     if hasattr(args, 'replace') and args.replace:
-        options['replace'] = [f"{from_val} {to_val}" for from_val, to_val in args.replace]
+        # Fix: Keep --replace arguments as separate items instead of combining them
+        options['replace'] = []
+        for from_val, to_val in args.replace:
+            options['replace'].extend([from_val, to_val])
         
     if hasattr(args, 'remove') and args.remove:
         options['remove'] = args.remove

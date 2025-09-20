@@ -187,7 +187,7 @@ class TestSpecsFunctionality(unittest.TestCase):
         expected = {
             'name': 'title',
             'case': 'Title Case',
-            'replace': ['old new'],
+            'replace': ['old', 'new'],  # Fixed: arguments should be separate, not combined
             'remove': ['test'],
             'regex': True
         }
