@@ -162,8 +162,8 @@ class TestSpecsFunctionality(unittest.TestCase):
         expected = {
             'exist': ['title', 'author'],
             'not': ['draft'],
-            'eq': ['status published'],
-            'match': ['date \\d{4}-\\d{2}-\\d{2}'],
+            'eq': ['status', 'published'],  # Now stored as separate array items
+            'match': ['date', r'\d{4}-\d{2}-\d{2}'],  # Now stored as separate array items
             'ignore_case': True,
             'csv': 'validation.csv'
         }
@@ -286,7 +286,7 @@ class TestSpecsFunctionality(unittest.TestCase):
         }
         
         result = format_command_text(command_entry)
-        expected = 'fmu read "*.md" "docs/*.md" --output frontmatter --skip-heading'
+        expected = 'fmu read *.md docs/*.md --output frontmatter --skip-heading'
         self.assertEqual(result, expected)
 
     def test_format_command_text_search(self):
@@ -302,7 +302,7 @@ class TestSpecsFunctionality(unittest.TestCase):
         }
         
         result = format_command_text(command_entry)
-        expected = 'fmu search "*.md" --name tags --value test --regex --csv results.csv'
+        expected = 'fmu search *.md --name tags --value test --regex --csv results.csv'
         self.assertEqual(result, expected)
 
     def test_format_command_text_validate(self):
@@ -312,12 +312,12 @@ class TestSpecsFunctionality(unittest.TestCase):
             'description': 'test validate',
             'patterns': ['*.md'],
             'exist': ['title', 'author'],
-            'eq': ['status published'],
+            'eq': ['status', 'published'],  # Array format: separate items
             'ignore_case': True
         }
         
         result = format_command_text(command_entry)
-        expected = 'fmu validate "*.md" --exist title --exist author --eq status published --ignore-case'
+        expected = 'fmu validate *.md --exist title --exist author --eq status published --ignore-case'
         self.assertEqual(result, expected)
 
     def test_format_command_text_update(self):
@@ -328,13 +328,13 @@ class TestSpecsFunctionality(unittest.TestCase):
             'patterns': ['*.md'],
             'name': 'title',
             'case': 'Title Case',
-            'replace': ['old new'],
+            'replace': ['old', 'new'],  # Array format: separate items
             'remove': ['test'],
             'regex': True
         }
         
         result = format_command_text(command_entry)
-        expected = "fmu update \"*.md\" --name title --case 'Title Case' --replace old new --remove test --regex"
+        expected = 'fmu update *.md --name title --case "Title Case" --replace old new --remove test --regex'
         self.assertEqual(result, expected)
 
     def test_execute_specs_file_empty(self):

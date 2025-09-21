@@ -94,7 +94,7 @@ def convert_validate_args_to_options(args) -> Dict[str, Any]:
     """Convert validate command arguments to options dictionary."""
     options = {}
     
-    # Handle validation rules
+    # Handle validation rules - store as arrays with separate items
     if hasattr(args, 'exist') and args.exist:
         options['exist'] = args.exist
         
@@ -102,22 +102,43 @@ def convert_validate_args_to_options(args) -> Dict[str, Any]:
         options['not'] = args.not_exist
         
     if hasattr(args, 'eq') and args.eq:
-        options['eq'] = [f"{field} {value}" for field, value in args.eq]
+        options['eq'] = []
+        for field, value in args.eq:
+            options['eq'].extend([field, value])
         
     if hasattr(args, 'ne') and args.ne:
-        options['ne'] = [f"{field} {value}" for field, value in args.ne]
+        options['ne'] = []
+        for field, value in args.ne:
+            options['ne'].extend([field, value])
         
     if hasattr(args, 'contain') and args.contain:
-        options['contain'] = [f"{field} {value}" for field, value in args.contain]
+        options['contain'] = []
+        for field, value in args.contain:
+            options['contain'].extend([field, value])
         
     if hasattr(args, 'not_contain') and args.not_contain:
-        options['not_contain'] = [f"{field} {value}" for field, value in args.not_contain]
+        options['not_contain'] = []
+        for field, value in args.not_contain:
+            options['not_contain'].extend([field, value])
         
     if hasattr(args, 'match') and args.match:
-        options['match'] = [f"{field} {regex}" for field, regex in args.match]
+        options['match'] = []
+        for field, regex in args.match:
+            options['match'].extend([field, regex])
         
     if hasattr(args, 'not_match') and args.not_match:
-        options['not_match'] = [f"{field} {regex}" for field, regex in args.not_match]
+        options['not_match'] = []
+        for field, regex in args.not_match:
+            options['not_match'].extend([field, regex])
+    
+    # Handle new validation rules added in Version 0.8.0
+    if hasattr(args, 'not_empty') and args.not_empty:
+        options['not_empty'] = args.not_empty
+        
+    if hasattr(args, 'list_size') and args.list_size:
+        options['list_size'] = []
+        for field, min_str, max_str in args.list_size:
+            options['list_size'].extend([field, min_str, max_str])
     
     if hasattr(args, 'ignore_case') and args.ignore_case:
         options['ignore_case'] = True
@@ -208,7 +229,17 @@ def format_command_text(command_entry: Dict[str, Any]) -> str:
     # Add patterns
     if patterns:
         for pattern in patterns:
-            parts.append(f'"{pattern}"')
+            # Quote patterns that contain spaces
+            if ' ' in pattern:
+                parts.append(f'"{pattern}"')
+            else:
+                parts.append(pattern)
+    
+    # Helper function to format values with quotes if they contain spaces
+    def format_value(value):
+        if isinstance(value, str) and ' ' in value:
+            return f'"{value}"'
+        return str(value)
     
     # Add options
     for key, value in command_entry.items():
@@ -216,51 +247,76 @@ def format_command_text(command_entry: Dict[str, Any]) -> str:
             continue
             
         if key == 'output' and value != 'both':
-            parts.append(f"--output {value}")
+            parts.append(f"--output {format_value(value)}")
         elif key == 'skip_heading' and value:
             parts.append("--skip-heading")
         elif key == 'name':
-            parts.append(f"--name {value}")
+            parts.append(f"--name {format_value(value)}")
         elif key == 'value':
-            parts.append(f"--value {value}")
+            parts.append(f"--value {format_value(value)}")
         elif key == 'ignore_case' and value:
             parts.append("--ignore-case")
         elif key == 'regex' and value:
             parts.append("--regex")
         elif key == 'csv':
-            parts.append(f"--csv {value}")
+            parts.append(f"--csv {format_value(value)}")
         elif key == 'exist' and isinstance(value, list):
             for exist_field in value:
-                parts.append(f"--exist {exist_field}")
+                parts.append(f"--exist {format_value(exist_field)}")
         elif key == 'not' and isinstance(value, list):
             for not_field in value:
-                parts.append(f"--not {not_field}")
+                parts.append(f"--not {format_value(not_field)}")
         elif key == 'eq' and isinstance(value, list):
-            for eq_pair in value:
-                parts.append(f"--eq {eq_pair}")
+            # Handle arrays: pairs of [field, value, field, value, ...]
+            for i in range(0, len(value), 2):
+                if i + 1 < len(value):
+                    field, val = value[i], value[i + 1]
+                    parts.append(f"--eq {format_value(field)} {format_value(val)}")
         elif key == 'ne' and isinstance(value, list):
-            for ne_pair in value:
-                parts.append(f"--ne {ne_pair}")
+            for i in range(0, len(value), 2):
+                if i + 1 < len(value):
+                    field, val = value[i], value[i + 1]
+                    parts.append(f"--ne {format_value(field)} {format_value(val)}")
         elif key == 'contain' and isinstance(value, list):
-            for contain_pair in value:
-                parts.append(f"--contain {contain_pair}")
+            for i in range(0, len(value), 2):
+                if i + 1 < len(value):
+                    field, val = value[i], value[i + 1]
+                    parts.append(f"--contain {format_value(field)} {format_value(val)}")
         elif key == 'not_contain' and isinstance(value, list):
-            for not_contain_pair in value:
-                parts.append(f"--not-contain {not_contain_pair}")
+            for i in range(0, len(value), 2):
+                if i + 1 < len(value):
+                    field, val = value[i], value[i + 1]
+                    parts.append(f"--not-contain {format_value(field)} {format_value(val)}")
         elif key == 'match' and isinstance(value, list):
-            for match_pair in value:
-                parts.append(f"--match {match_pair}")
+            for i in range(0, len(value), 2):
+                if i + 1 < len(value):
+                    field, regex = value[i], value[i + 1]
+                    parts.append(f"--match {format_value(field)} {format_value(regex)}")
         elif key == 'not_match' and isinstance(value, list):
-            for not_match_pair in value:
-                parts.append(f"--not-match {not_match_pair}")
+            for i in range(0, len(value), 2):
+                if i + 1 < len(value):
+                    field, regex = value[i], value[i + 1]
+                    parts.append(f"--not-match {format_value(field)} {format_value(regex)}")
+        elif key == 'not_empty' and isinstance(value, list):
+            for field in value:
+                parts.append(f"--not-empty {format_value(field)}")
+        elif key == 'list_size' and isinstance(value, list):
+            # Handle triplets: [field, min, max, field, min, max, ...]
+            for i in range(0, len(value), 3):
+                if i + 2 < len(value):
+                    field, min_val, max_val = value[i], value[i + 1], value[i + 2]
+                    parts.append(f"--list-size {format_value(field)} {min_val} {max_val}")
         elif key == 'case':
-            parts.append(f"--case '{value}'")
+            parts.append(f"--case {format_value(value)}")
         elif key == 'replace' and isinstance(value, list):
-            for replace_pair in value:
-                parts.append(f"--replace {replace_pair}")
+            # Handle pairs: [from, to, from, to, ...]
+            for i in range(0, len(value), 2):
+                if i + 1 < len(value):
+                    from_val, to_val = value[i], value[i + 1]
+                    parts.append(f"--replace {format_value(from_val)} {format_value(to_val)}")
         elif key == 'remove' and isinstance(value, list):
             for remove_val in value:
-                parts.append(f"--remove {remove_val}")
+                parts.append(f"--remove {format_value(remove_val)}")
         elif key == 'deduplication' and value != 'true':
             parts.append(f"--deduplication {value}")
     
@@ -302,12 +358,14 @@ def convert_specs_to_args(command_entry: Dict[str, Any]):
         args_dict.update({
             'exist': command_entry.get('exist'),
             'not_exist': command_entry.get('not'),
-            'eq': _parse_validation_pairs(command_entry.get('eq', [])),
-            'ne': _parse_validation_pairs(command_entry.get('ne', [])),
-            'contain': _parse_validation_pairs(command_entry.get('contain', [])),
-            'not_contain': _parse_validation_pairs(command_entry.get('not_contain', [])),
-            'match': _parse_validation_pairs(command_entry.get('match', [])),
-            'not_match': _parse_validation_pairs(command_entry.get('not_match', [])),
+            'eq': _parse_validation_pairs_from_array(command_entry.get('eq', [])),
+            'ne': _parse_validation_pairs_from_array(command_entry.get('ne', [])),
+            'contain': _parse_validation_pairs_from_array(command_entry.get('contain', [])),
+            'not_contain': _parse_validation_pairs_from_array(command_entry.get('not_contain', [])),
+            'match': _parse_validation_pairs_from_array(command_entry.get('match', [])),
+            'not_match': _parse_validation_pairs_from_array(command_entry.get('not_match', [])),
+            'not_empty': command_entry.get('not_empty'),
+            'list_size': _parse_list_size_triplets_from_array(command_entry.get('list_size', [])),
             'ignore_case': command_entry.get('ignore_case', False),
             'csv_file': command_entry.get('csv')
         })
@@ -315,7 +373,7 @@ def convert_specs_to_args(command_entry: Dict[str, Any]):
         args_dict.update({
             'name': command_entry.get('name', ''),
             'case': command_entry.get('case'),
-            'replace': _parse_update_pairs(command_entry.get('replace', [])),
+            'replace': _parse_update_pairs_from_array(command_entry.get('replace', [])),
             'remove': command_entry.get('remove'),
             'deduplication': command_entry.get('deduplication', 'true'),
             'ignore_case': command_entry.get('ignore_case', False),
@@ -327,7 +385,7 @@ def convert_specs_to_args(command_entry: Dict[str, Any]):
 
 
 def _parse_validation_pairs(pairs: List[str]) -> List[Tuple[str, str]]:
-    """Parse validation field-value pairs from specs format."""
+    """Parse validation field-value pairs from specs format (legacy string format)."""
     if not pairs:
         return None
     
@@ -339,8 +397,34 @@ def _parse_validation_pairs(pairs: List[str]) -> List[Tuple[str, str]]:
     return result if result else None
 
 
+def _parse_validation_pairs_from_array(array: List[str]) -> List[Tuple[str, str]]:
+    """Parse validation field-value pairs from array format."""
+    if not array:
+        return None
+    
+    result = []
+    # Process pairs: [field, value, field, value, ...]
+    for i in range(0, len(array), 2):
+        if i + 1 < len(array):
+            result.append((array[i], array[i + 1]))
+    return result if result else None
+
+
+def _parse_list_size_triplets_from_array(array: List[str]) -> List[Tuple[str, str, str]]:
+    """Parse list-size field-min-max triplets from array format."""
+    if not array:
+        return None
+    
+    result = []
+    # Process triplets: [field, min, max, field, min, max, ...]
+    for i in range(0, len(array), 3):
+        if i + 2 < len(array):
+            result.append((array[i], array[i + 1], array[i + 2]))
+    return result if result else None
+
+
 def _parse_update_pairs(pairs: List[str]) -> List[Tuple[str, str]]:
-    """Parse update from-to pairs from specs format."""
+    """Parse update from-to pairs from specs format (legacy string format)."""
     if not pairs:
         return None
     
@@ -349,6 +433,19 @@ def _parse_update_pairs(pairs: List[str]) -> List[Tuple[str, str]]:
         parts = pair.split(' ', 1)
         if len(parts) == 2:
             result.append((parts[0], parts[1]))
+    return result if result else None
+
+
+def _parse_update_pairs_from_array(array: List[str]) -> List[Tuple[str, str]]:
+    """Parse update from-to pairs from array format."""
+    if not array:
+        return None
+    
+    result = []
+    # Process pairs: [from, to, from, to, ...]
+    for i in range(0, len(array), 2):
+        if i + 1 < len(array):
+            result.append((array[i], array[i + 1]))
     return result if result else None
 
 
