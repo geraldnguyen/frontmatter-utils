@@ -19,7 +19,8 @@ def transform_case(value: str, case_type: str) -> str:
     elif case_type == 'Sentence case':
         return value.capitalize()
     elif case_type == 'Title Case':
-        return value.title()
+        # Handle contractions properly by using a custom title case logic
+        return _title_case_with_contractions(value)
     elif case_type == 'snake_case':
         # Convert to snake_case
         # First, handle camelCase by inserting underscores before uppercase letters
@@ -44,6 +45,36 @@ def transform_case(value: str, case_type: str) -> str:
         return s4.lower()
     else:
         return value
+
+
+def _title_case_with_contractions(value: str) -> str:
+    """
+    Convert to title case while properly handling contractions.
+    
+    This fixes the bug where contractions like "can't" become "Can'T" instead of "Can't".
+    """
+    # Split into words
+    words = value.split()
+    result_words = []
+    
+    for word in words:
+        # Check if this word contains an apostrophe (potential contraction)
+        if "'" in word:
+            # Handle contractions specially
+            parts = word.split("'")
+            if len(parts) == 2:
+                # Standard contraction like "can't", "aren't", etc.
+                first_part = parts[0].capitalize()
+                second_part = parts[1].lower()  # Keep the part after apostrophe lowercase
+                result_words.append(f"{first_part}'{second_part}")
+            else:
+                # Multiple apostrophes or other cases, just capitalize normally
+                result_words.append(word.capitalize())
+        else:
+            # Regular word, capitalize normally
+            result_words.append(word.capitalize())
+    
+    return ' '.join(result_words)
 
 
 def apply_replace_operation(value: Any, from_val: str, to_val: str, ignore_case: bool = False, use_regex: bool = False) -> Any:
@@ -235,6 +266,14 @@ def update_frontmatter(
                     if new_value != current_value:
                         current_value = new_value
                         changes_made = True
+                        
+                elif op_type == 'deduplication':
+                    # Handle deduplication as a standalone operation
+                    if isinstance(current_value, list):
+                        deduplicated_value = deduplicate_array(current_value)
+                        if deduplicated_value != current_value:
+                            current_value = deduplicated_value
+                            changes_made = True
             
             # Apply deduplication last if requested
             if deduplication and isinstance(current_value, list):
@@ -296,14 +335,15 @@ def update_frontmatter(
                     })
                     continue
             
-            results.append({
-                'file_path': file_path,
-                'field': frontmatter_name,
-                'original_value': original_value,
-                'new_value': current_value if frontmatter_name in frontmatter_data else None,
-                'changes_made': changes_made,
-                'reason': 'Updated successfully' if changes_made else 'No changes needed'
-            })
+            if changes_made:
+                results.append({
+                    'file_path': file_path,
+                    'field': frontmatter_name,
+                    'original_value': original_value,
+                    'new_value': current_value if frontmatter_name in frontmatter_data else None,
+                    'changes_made': changes_made,
+                    'reason': 'Updated successfully'
+                })
             
         except Exception as e:
             results.append({
