@@ -819,3 +819,7 @@ MIT License - see LICENSE file for details.
 - CSV export functionality
 - Case-sensitive and case-insensitive search
 - Comprehensive test suite
+
+## Mics
+
+- Download stats: https://pypistats.org/packages/frontmatter-utils
