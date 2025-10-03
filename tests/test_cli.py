@@ -46,7 +46,7 @@ This is test content.""")
     def test_cmd_version(self):
         """Test version command."""
         output = self.capture_output(cmd_version)
-        self.assertIn('0.8.0', output)
+        self.assertIn('0.9.0', output)
     
     def test_cmd_help(self):
         """Test help command."""
@@ -89,6 +89,112 @@ This is test content.""")
         self.assertIn('title: Test Post', output)
         self.assertIn('This is test content', output)
     
+    def test_cmd_read_with_escape(self):
+        """Test read command with escape option."""
+        # Create a test file with special characters
+        test_file_escape = os.path.join(self.temp_dir, 'escape_test.md')
+        with open(test_file_escape, 'w') as f:
+            f.write("""---
+title: Escape Test
+description: Line one and line two
+---
+
+Content with "quotes" and 'apostrophes'
+And newlines
+and tabs.""")
+        
+        output = self.capture_output(cmd_read, [test_file_escape], 'both', False, 'yaml', True)
+        # Check that newlines in the content are escaped
+        self.assertIn('\\n', output)
+        # Check that quotes in the content are escaped
+        self.assertIn('\\"', output)
+        self.assertIn("\\'", output)
+    
+    def test_cmd_read_template_basic(self):
+        """Test read command with template output."""
+        template = '{ "title": "$frontmatter.title", "author": "$frontmatter.author" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        self.assertIn('"title": "Test Post"', output)
+        self.assertIn('"author": "Test Author"', output)
+    
+    def test_cmd_read_template_with_filepath(self):
+        """Test read command with template using $filepath."""
+        template = '{ "path": "$filepath" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        self.assertIn(f'"path": "{self.test_file}"', output)
+    
+    def test_cmd_read_template_with_filename(self):
+        """Test read command with template using $filename."""
+        template = '{ "file": "$filename" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        self.assertIn('"file": "test.md"', output)
+    
+    def test_cmd_read_template_with_content(self):
+        """Test read command with template using $content."""
+        template = '{ "content": "$content" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        self.assertIn('"content": "This is test content."', output)
+    
+    def test_cmd_read_template_with_array(self):
+        """Test read command with template using array frontmatter."""
+        # Create a test file with array frontmatter
+        test_file_array = os.path.join(self.temp_dir, 'template_array.md')
+        with open(test_file_array, 'w') as f:
+            f.write("""---
+title: Array Test
+tags:
+  - python
+  - testing
+---
+
+Test content.""")
+        
+        template = '{ "tags": $frontmatter.tags }'
+        output = self.capture_output(cmd_read, [test_file_array], 'template', False, 'yaml', False, template)
+        self.assertIn('"tags": ["python", "testing"]', output)
+    
+    def test_cmd_read_template_with_array_index(self):
+        """Test read command with template using array indexing."""
+        # Create a test file with array frontmatter
+        test_file_array = os.path.join(self.temp_dir, 'template_array_idx.md')
+        with open(test_file_array, 'w') as f:
+            f.write("""---
+title: Array Index Test
+tags:
+  - python
+  - testing
+  - markdown
+---
+
+Test content.""")
+        
+        template = '{ "first": "$frontmatter.tags[0]", "second": "$frontmatter.tags[1]" }'
+        output = self.capture_output(cmd_read, [test_file_array], 'template', False, 'yaml', False, template)
+        self.assertIn('"first": "python"', output)
+        self.assertIn('"second": "testing"', output)
+    
+    def test_cmd_read_template_with_escape(self):
+        """Test read command with template and escape."""
+        test_file_escape = os.path.join(self.temp_dir, 'template_escape.md')
+        with open(test_file_escape, 'w') as f:
+            f.write("""---
+title: Test
+---
+
+Line one
+Line two""")
+        
+        template = '{ "content": "$content" }'
+        output = self.capture_output(cmd_read, [test_file_escape], 'template', False, 'yaml', True, template)
+        self.assertIn('\\n', output)
+    
+    def test_cmd_read_template_missing_field(self):
+        """Test read command with template referencing non-existent field."""
+        template = '{ "missing": "$frontmatter.nonexistent" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        # Should keep placeholder if field doesn't exist
+        self.assertIn('$frontmatter.nonexistent', output)
+    
     def test_cmd_search_console_output(self):
         """Test search command with console output."""
         output = self.capture_output(cmd_search, [self.test_file], 'title')
@@ -117,7 +223,7 @@ This is test content.""")
     def test_main_version(self):
         """Test main function with version command."""
         output = self.capture_output(main)
-        self.assertIn('0.8.0', output)
+        self.assertIn('0.9.0', output)
     
     @patch('sys.argv', ['fmu', 'help'])
     def test_main_help(self):

@@ -19,6 +19,118 @@ from .specs import (
 )
 
 
+def _escape_string(text: str) -> str:
+    """
+    Escape special characters in a string.
+    
+    Args:
+        text: String to escape
+        
+    Returns:
+        Escaped string
+    """
+    if not text:
+        return text
+    # Escape special characters
+    text = text.replace('\\', '\\\\')  # Backslash first
+    text = text.replace('\n', '\\n')   # Newline
+    text = text.replace('\r', '\\r')   # Carriage return
+    text = text.replace('\t', '\\t')   # Tab
+    text = text.replace("'", "\\'")    # Single quote
+    text = text.replace('"', '\\"')    # Double quote
+    return text
+
+
+def _escape_frontmatter(frontmatter: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Recursively escape special characters in frontmatter values.
+    
+    Args:
+        frontmatter: Frontmatter dictionary
+        
+    Returns:
+        Dictionary with escaped values
+    """
+    if not frontmatter:
+        return frontmatter
+    
+    escaped = {}
+    for key, value in frontmatter.items():
+        if isinstance(value, str):
+            escaped[key] = _escape_string(value)
+        elif isinstance(value, list):
+            escaped[key] = [_escape_string(v) if isinstance(v, str) else v for v in value]
+        elif isinstance(value, dict):
+            escaped[key] = _escape_frontmatter(value)
+        else:
+            escaped[key] = value
+    return escaped
+
+
+def _render_template(template: str, file_path: str, frontmatter: Dict[str, Any], content: str) -> str:
+    """
+    Render a template string with placeholders.
+    
+    Args:
+        template: Template string with placeholders
+        file_path: Full path to the file
+        frontmatter: Frontmatter dictionary
+        content: Content string
+        
+    Returns:
+        Rendered template string
+    """
+    import os
+    import re
+    
+    result = template
+    
+    # Replace $filename
+    filename = os.path.basename(file_path)
+    result = result.replace('$filename', filename)
+    
+    # Replace $filepath
+    result = result.replace('$filepath', file_path)
+    
+    # Replace $content
+    result = result.replace('$content', content)
+    
+    # Replace $frontmatter.name and $frontmatter.name[index] placeholders
+    if frontmatter:
+        # Find all frontmatter placeholders
+        # Pattern: $frontmatter.name or $frontmatter.name[number]
+        pattern = r'\$frontmatter\.([a-zA-Z_][a-zA-Z0-9_]*)(?:\[(\d+)\])?'
+        
+        def replace_frontmatter(match):
+            field_name = match.group(1)
+            index_str = match.group(2)
+            
+            if field_name not in frontmatter:
+                return match.group(0)  # Keep placeholder if field not found
+            
+            value = frontmatter[field_name]
+            
+            if index_str is not None:
+                # Array indexing
+                index = int(index_str)
+                if isinstance(value, list) and 0 <= index < len(value):
+                    return str(value[index])
+                else:
+                    return match.group(0)  # Keep placeholder if invalid
+            else:
+                # Regular field access
+                if isinstance(value, list):
+                    # Convert list to string representation
+                    import json
+                    return json.dumps(value)
+                else:
+                    return str(value)
+        
+        result = re.sub(pattern, replace_frontmatter, result)
+    
+    return result
+
+
 def cmd_version():
     """Handle version command."""
     print(__version__)
@@ -51,23 +163,33 @@ def cmd_help():
     print("For command-specific help, use: fmu COMMAND --help")
 
 
-def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = False, format_type: str = "yaml", save_specs=None):
+def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = False, format_type: str = "yaml", 
+             escape: bool = False, template: str = None, save_specs=None):
     """
     Handle read command.
     
     Args:
         patterns: List of glob patterns or file paths
-        output: What to output ('frontmatter', 'content', 'both')
+        output: What to output ('frontmatter', 'content', 'both', 'template')
         skip_heading: Whether to skip section headings
         format_type: Format of frontmatter
+        escape: Whether to escape special characters
+        template: Template string for output (required when output='template')
         save_specs: Tuple of (description, specs_file) for saving specs
     """
+    # Validate template requirement
+    if output == 'template' and not template:
+        print("Error: --template is required when --output is 'template'", file=sys.stderr)
+        sys.exit(1)
+    
     # Save specs if requested
     if save_specs:
         description, specs_file = save_specs
         options = convert_read_args_to_options(type('Args', (), {
             'output': output,
-            'skip_heading': skip_heading
+            'skip_heading': skip_heading,
+            'escape': escape,
+            'template': template
         })())
         save_specs_file(specs_file, 'read', description, patterns, options)
         print(f"Specs saved to {specs_file}")
@@ -79,22 +201,33 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
         try:
             frontmatter, content = parse_file(file_path, format_type)
             
-            if len(files) > 1:
-                print(f"\n=== {file_path} ===")
-            
-            if output in ['frontmatter', 'both']:
-                if not skip_heading:
-                    print("Front matter:")
+            # Apply escaping if needed
+            if escape:
+                content = _escape_string(content)
                 if frontmatter:
-                    import yaml
-                    print(yaml.dump(frontmatter, default_flow_style=False).rstrip())
-                else:
-                    print("None")
+                    frontmatter = _escape_frontmatter(frontmatter)
+            
+            if output == 'template':
+                # Render template
+                result = _render_template(template, file_path, frontmatter, content)
+                print(result)
+            else:
+                if len(files) > 1:
+                    print(f"\n=== {file_path} ===")
                 
-            if output in ['content', 'both']:
-                if output == 'both' and not skip_heading:
-                    print("\nContent:")
-                print(content.rstrip())
+                if output in ['frontmatter', 'both']:
+                    if not skip_heading:
+                        print("Front matter:")
+                    if frontmatter:
+                        import yaml
+                        print(yaml.dump(frontmatter, default_flow_style=False).rstrip())
+                    else:
+                        print("None")
+                    
+                if output in ['content', 'both']:
+                    if output == 'both' and not skip_heading:
+                        print("\nContent:")
+                    print(content.rstrip())
                 
         except (FileNotFoundError, ValueError, UnicodeDecodeError) as e:
             print(f"Error processing {file_path}: {e}", file=sys.stderr)
@@ -251,7 +384,7 @@ def create_parser():
     read_parser.add_argument('patterns', nargs='+', help='Glob patterns or file paths')
     read_parser.add_argument(
         '--output',
-        choices=['frontmatter', 'content', 'both'],
+        choices=['frontmatter', 'content', 'both', 'template'],
         default='both',
         help='What to output (default: both)'
     )
@@ -259,6 +392,15 @@ def create_parser():
         '--skip-heading',
         action='store_true',
         help='Skip section headings (default: false)'
+    )
+    read_parser.add_argument(
+        '--escape',
+        action='store_true',
+        help='Escape special characters (newline, carriage return, tab, quotes) in output (default: false)'
+    )
+    read_parser.add_argument(
+        '--template',
+        help='Template string for output (required when --output is template). Supports: $filename, $filepath, $content, $frontmatter.name, $frontmatter.name[index]'
     )
     read_parser.add_argument(
         '--save-specs',
@@ -502,6 +644,8 @@ def main():
             output=args.output,
             skip_heading=args.skip_heading,
             format_type=args.format,
+            escape=args.escape if hasattr(args, 'escape') else False,
+            template=args.template if hasattr(args, 'template') else None,
             save_specs=args.save_specs if hasattr(args, 'save_specs') else None
         )
     elif args.command == 'search':
