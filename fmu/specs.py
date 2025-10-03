@@ -64,6 +64,15 @@ def convert_read_args_to_options(args) -> Dict[str, Any]:
     
     if hasattr(args, 'skip_heading') and args.skip_heading:
         options['skip_heading'] = True
+    
+    if hasattr(args, 'escape') and args.escape:
+        options['escape'] = True
+    
+    if hasattr(args, 'template') and args.template:
+        options['template'] = args.template
+    
+    if hasattr(args, 'file') and args.file:
+        options['file'] = args.file
         
     return options
 
@@ -250,6 +259,12 @@ def format_command_text(command_entry: Dict[str, Any]) -> str:
             parts.append(f"--output {format_value(value)}")
         elif key == 'skip_heading' and value:
             parts.append("--skip-heading")
+        elif key == 'escape' and value:
+            parts.append("--escape")
+        elif key == 'template':
+            parts.append(f"--template {format_value(value)}")
+        elif key == 'file':
+            parts.append(f"--file {format_value(value)}")
         elif key == 'name':
             parts.append(f"--name {format_value(value)}")
         elif key == 'value':
@@ -344,7 +359,10 @@ def convert_specs_to_args(command_entry: Dict[str, Any]):
     if command == 'read':
         args_dict.update({
             'output': command_entry.get('output', 'both'),
-            'skip_heading': command_entry.get('skip_heading', False)
+            'skip_heading': command_entry.get('skip_heading', False),
+            'escape': command_entry.get('escape', False),
+            'template': command_entry.get('template'),
+            'file': command_entry.get('file')
         })
     elif command == 'search':
         args_dict.update({
@@ -470,7 +488,10 @@ def execute_command(command_entry: Dict[str, Any]) -> Tuple[bool, str]:
                 patterns=args.patterns,
                 output=args.output,
                 skip_heading=args.skip_heading,
-                format_type=args.format
+                format_type=args.format,
+                escape=args.escape,
+                template=args.template,
+                file_output=args.file
             )
         elif command == 'search':
             cmd_search(

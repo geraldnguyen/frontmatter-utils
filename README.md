@@ -14,6 +14,9 @@ A Python library and CLI tool for parsing and searching front matter in files.
 - **Update Engine**: Transform, replace, and remove frontmatter values *(New in v0.4.0)*
 - **Case Transformations**: Six different case conversion types *(New in v0.4.0)*
 - **Value Deduplication**: Automatic removal of duplicate array values *(New in v0.4.0)*
+- **Template Output**: Export content and frontmatter using custom templates *(New in v0.9.0)*
+- **Character Escaping**: Escape special characters in output *(New in v0.9.0)*
+- **File Output**: Save command output directly to files *(New in v0.10.0)*
 - **Case Sensitivity**: Support for case-sensitive or case-insensitive matching
 - **Multiple Output Formats**: Console output or CSV export
 - **Glob Pattern Support**: Process multiple files using glob patterns
@@ -97,7 +100,76 @@ fmu read "*.md" --output content
 
 # Skip section headings
 fmu read "*.md" --skip-heading
+
+# Escape special characters in output (New in v0.9.0)
+fmu read "*.md" --escape
+
+# Use template output for custom formatting (New in v0.9.0)
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title", "file": "$filename" }'
+
+# Save output to file (New in v0.10.0)
+fmu read "*.md" --file output.txt
+
+# Save template output to JSON file (New in v0.10.0)
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title" }' --file output.json
 ```
+
+#### File Output (New in v0.10.0)
+
+The `--file` option allows you to save command output directly to a file instead of displaying it in the console:
+
+```bash
+# Save standard output to file
+fmu read "*.md" --file output.txt
+
+# Save template output to file
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title" }' --file output.json
+
+# Combine with escape for JSON-safe file output
+fmu read "*.md" --output template --template '{ "content": "$content" }' --escape --file data.json
+
+# Works with specs files - different commands can output to different files
+fmu execute commands.yaml  # Each command can specify its own --file destination
+```
+
+**Use Cases:**
+- Export metadata to JSON files for further processing
+- Generate data files for static site generators
+- Create batch processing pipelines with file-based workflows
+- Archive frontmatter and content in structured formats
+
+#### Template Output (New in v0.9.0)
+
+The `--output template` option allows you to export content and frontmatter in custom formats:
+
+```bash
+# Export as JSON-like format
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title", "content": "$content" }'
+
+# Access array elements by index
+fmu read "*.md" --output template --template '{ "first_tag": "$frontmatter.tags[0]", "second_tag": "$frontmatter.tags[1]" }'
+
+# Include file metadata
+fmu read "*.md" --output template --template '{ "path": "$filepath", "name": "$filename" }'
+
+# Combine with escape option for JSON-safe output
+fmu read "*.md" --output template --template '{ "content": "$content" }' --escape
+```
+
+**Template Placeholders:**
+- `$filename`: Base filename (e.g., "post.md")
+- `$filepath`: Full file path
+- `$content`: Content after frontmatter
+- `$frontmatter.fieldname`: Access frontmatter field (single value or full array as JSON)
+- `$frontmatter.fieldname[N]`: Access array element by index (0-based)
+
+**Escape Option:**
+When `--escape` is used, the following characters are escaped:
+- Newline: `\n`
+- Carriage return: `\r`
+- Tab: `\t`
+- Single quote: `'` → `\'`
+- Double quote: `"` → `\"`
 
 #### Search Commands
 
@@ -235,8 +307,11 @@ Parse files and extract frontmatter and/or content.
 - `PATTERNS`: One or more glob patterns, file paths, or directory paths
 
 **Options:**
-- `--output [frontmatter|content|both]`: What to output (default: both)
-- `--skip-heading [true|false]`: Skip section headings (default: false)
+- `--output [frontmatter|content|both|template]`: What to output (default: both)
+- `--skip-heading`: Skip section headings (default: false)
+- `--escape`: Escape special characters in output (default: false) *(New in v0.9.0)*
+- `--template TEMPLATE`: Template string for output (required when --output is template) *(New in v0.9.0)*
+- `--file FILE`: Save output to file instead of console *(New in v0.10.0)*
 
 **Examples:**
 ```bash
@@ -248,6 +323,15 @@ fmu read file1.md file2.md
 
 # Read all files in a directory
 fmu read docs/
+
+# Export with custom template (New in v0.9.0)
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title", "path": "$filepath" }'
+
+# Save output to file (New in v0.10.0)
+fmu read "*.md" --file output.txt
+
+# Save template output to JSON file (New in v0.10.0)
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title" }' --file data.json
 
 # Show only frontmatter
 fmu read "*.md" --output frontmatter
@@ -738,6 +822,44 @@ python -m pytest tests/test_cli.py
 MIT License - see LICENSE file for details.
 
 ## Changelog
+
+### Version 0.10.0
+
+- **File Output Feature**
+  - New `--file` option to save command output directly to files
+  - Works with all output modes (frontmatter, content, both, template)
+  - Enable file-based workflows for batch processing
+  - Multiple commands in specs files can output to different files
+- **Enhanced Integration**
+  - Seamless integration with specs file execution
+  - Each command can specify independent output destination
+  - Console and file output can be mixed in the same workflow
+- **Use Cases**
+  - Export metadata to JSON files for further processing
+  - Generate data files for static site generators
+  - Create automated pipelines with file-based workflows
+- **Testing**
+  - Added comprehensive tests for file output functionality
+  - All 136 tests passing
+
+### Version 0.9.0
+
+- **Template Output Feature**
+  - New `--output template` option for custom formatting
+  - Template placeholders: `$filename`, `$filepath`, `$content`, `$frontmatter.field`
+  - Array indexing support: `$frontmatter.field[N]`
+  - Array values exported as JSON when accessed without index
+- **Character Escaping**
+  - New `--escape` option to escape special characters
+  - Escapes: newline (`\n`), carriage return (`\r`), tab (`\t`), quotes (`'`, `"`)
+  - Works with all output modes (frontmatter, content, both, template)
+- **Enhanced Read Command**
+  - Template mode validation (requires `--template` when `--output template`)
+  - Support for complex output formats (JSON, custom text, etc.)
+  - Graceful handling of missing frontmatter fields in templates
+- **Library API Updates**
+  - Template rendering functions available for library users
+  - Character escaping functions for text processing
 
 ### Version 0.4.0
 

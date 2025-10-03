@@ -304,6 +304,28 @@ Update README file with comprehensive instruction on getting started and how to 
 Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
 
 
+# Version 0.10.0 - Export content and matters to file: --file [file path] option
+
+Enhance the "read" command with the following option:
+
+**New `--file [file path]` option**
+
+When specify, save the output of the command to a file at `[file path]` location instead of console.
+
+Different command in a specs file may have different output destination e.g. console, file1, file2... The `execute` command must handle each command's output independently.
+
+
+Update or expose correcting library function to support the above changes in CLI.
+
+Save all dependencies in a requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README file with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
+
 # Future versions -- do not execute unless explicitly prompt
 
 
