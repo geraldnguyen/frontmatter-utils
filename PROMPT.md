@@ -254,6 +254,56 @@ Update README file with comprehensive instruction on getting started and how to 
 Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
 
 
+
+# Version 0.9.0 - Export content and matters to file 
+
+Enhance the "read" command with the following features:
+
+**Additional `--output` option: `template`**
+- Updated syntax: "--output [frontmatter|content|both|template]": default to "both"
+- When the value is "template", require a `--template` option (specification below)
+
+**New `--espcape "[true|false]"` option**
+
+Default to `false`. The frontmatters and content to be output are left unchanged as they were extracted from the input file
+
+When `true`, escape the following special characters before output them:
+- Newline `\n`
+- Carriage return `\r`
+- Tab `\t`
+- Single quote `'`
+- Double quote `"`
+
+
+**New `--template [spec string]` option**
+
+In conjunction of the `--output template` option, the CLI will output each file in the format specified in the `spec string`. The specification support the following placeholder
+- $filename
+- $filepath
+- $content
+- $frontmatter.name: a single value or an array
+- $frontmatter.name[number] if `$frontmatter.name` is an array
+
+Example:
+
+```
+{ \"title\": \"$frontmatter.title\", \"content\": \"$content\", \"path\": \"$filepath\" }
+
+```
+
+
+
+Update or expose correcting library function to support the above changes in CLI.
+
+Save all dependencies in a requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README file with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
+
 # Future versions -- do not execute unless explicitly prompt
 
 
