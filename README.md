@@ -16,6 +16,7 @@ A Python library and CLI tool for parsing and searching front matter in files.
 - **Value Deduplication**: Automatic removal of duplicate array values *(New in v0.4.0)*
 - **Template Output**: Export content and frontmatter using custom templates *(New in v0.9.0)*
 - **Character Escaping**: Escape special characters in output *(New in v0.9.0)*
+- **File Output**: Save command output directly to files *(New in v0.10.0)*
 - **Case Sensitivity**: Support for case-sensitive or case-insensitive matching
 - **Multiple Output Formats**: Console output or CSV export
 - **Glob Pattern Support**: Process multiple files using glob patterns
@@ -105,7 +106,37 @@ fmu read "*.md" --escape
 
 # Use template output for custom formatting (New in v0.9.0)
 fmu read "*.md" --output template --template '{ "title": "$frontmatter.title", "file": "$filename" }'
+
+# Save output to file (New in v0.10.0)
+fmu read "*.md" --file output.txt
+
+# Save template output to JSON file (New in v0.10.0)
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title" }' --file output.json
 ```
+
+#### File Output (New in v0.10.0)
+
+The `--file` option allows you to save command output directly to a file instead of displaying it in the console:
+
+```bash
+# Save standard output to file
+fmu read "*.md" --file output.txt
+
+# Save template output to file
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title" }' --file output.json
+
+# Combine with escape for JSON-safe file output
+fmu read "*.md" --output template --template '{ "content": "$content" }' --escape --file data.json
+
+# Works with specs files - different commands can output to different files
+fmu execute commands.yaml  # Each command can specify its own --file destination
+```
+
+**Use Cases:**
+- Export metadata to JSON files for further processing
+- Generate data files for static site generators
+- Create batch processing pipelines with file-based workflows
+- Archive frontmatter and content in structured formats
 
 #### Template Output (New in v0.9.0)
 
@@ -280,6 +311,7 @@ Parse files and extract frontmatter and/or content.
 - `--skip-heading`: Skip section headings (default: false)
 - `--escape`: Escape special characters in output (default: false) *(New in v0.9.0)*
 - `--template TEMPLATE`: Template string for output (required when --output is template) *(New in v0.9.0)*
+- `--file FILE`: Save output to file instead of console *(New in v0.10.0)*
 
 **Examples:**
 ```bash
@@ -294,6 +326,12 @@ fmu read docs/
 
 # Export with custom template (New in v0.9.0)
 fmu read "*.md" --output template --template '{ "title": "$frontmatter.title", "path": "$filepath" }'
+
+# Save output to file (New in v0.10.0)
+fmu read "*.md" --file output.txt
+
+# Save template output to JSON file (New in v0.10.0)
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title" }' --file data.json
 
 # Show only frontmatter
 fmu read "*.md" --output frontmatter
@@ -784,6 +822,25 @@ python -m pytest tests/test_cli.py
 MIT License - see LICENSE file for details.
 
 ## Changelog
+
+### Version 0.10.0
+
+- **File Output Feature**
+  - New `--file` option to save command output directly to files
+  - Works with all output modes (frontmatter, content, both, template)
+  - Enable file-based workflows for batch processing
+  - Multiple commands in specs files can output to different files
+- **Enhanced Integration**
+  - Seamless integration with specs file execution
+  - Each command can specify independent output destination
+  - Console and file output can be mixed in the same workflow
+- **Use Cases**
+  - Export metadata to JSON files for further processing
+  - Generate data files for static site generators
+  - Create automated pipelines with file-based workflows
+- **Testing**
+  - Added comprehensive tests for file output functionality
+  - All 136 tests passing
 
 ### Version 0.9.0
 
