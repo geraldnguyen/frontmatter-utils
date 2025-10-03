@@ -70,6 +70,9 @@ def convert_read_args_to_options(args) -> Dict[str, Any]:
     
     if hasattr(args, 'template') and args.template:
         options['template'] = args.template
+    
+    if hasattr(args, 'file') and args.file:
+        options['file'] = args.file
         
     return options
 
@@ -260,6 +263,8 @@ def format_command_text(command_entry: Dict[str, Any]) -> str:
             parts.append("--escape")
         elif key == 'template':
             parts.append(f"--template {format_value(value)}")
+        elif key == 'file':
+            parts.append(f"--file {format_value(value)}")
         elif key == 'name':
             parts.append(f"--name {format_value(value)}")
         elif key == 'value':
@@ -356,7 +361,8 @@ def convert_specs_to_args(command_entry: Dict[str, Any]):
             'output': command_entry.get('output', 'both'),
             'skip_heading': command_entry.get('skip_heading', False),
             'escape': command_entry.get('escape', False),
-            'template': command_entry.get('template')
+            'template': command_entry.get('template'),
+            'file': command_entry.get('file')
         })
     elif command == 'search':
         args_dict.update({
@@ -484,7 +490,8 @@ def execute_command(command_entry: Dict[str, Any]) -> Tuple[bool, str]:
                 skip_heading=args.skip_heading,
                 format_type=args.format,
                 escape=args.escape,
-                template=args.template
+                template=args.template,
+                file_output=args.file
             )
         elif command == 'search':
             cmd_search(

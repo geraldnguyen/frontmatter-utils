@@ -46,7 +46,7 @@ This is test content.""")
     def test_cmd_version(self):
         """Test version command."""
         output = self.capture_output(cmd_version)
-        self.assertIn('0.9.0', output)
+        self.assertIn('0.10.0', output)
     
     def test_cmd_help(self):
         """Test help command."""
@@ -195,6 +195,37 @@ Line two""")
         # Should keep placeholder if field doesn't exist
         self.assertIn('$frontmatter.nonexistent', output)
     
+    def test_cmd_read_with_file_output(self):
+        """Test read command with file output."""
+        output_file = os.path.join(self.temp_dir, 'output.txt')
+        cmd_read([self.test_file], 'both', False, 'yaml', False, None, output_file)
+        
+        # Check that file was created
+        self.assertTrue(os.path.exists(output_file))
+        
+        # Check file content
+        with open(output_file, 'r') as f:
+            content = f.read()
+            self.assertIn('Front matter:', content)
+            self.assertIn('title: Test Post', content)
+            self.assertIn('Content:', content)
+            self.assertIn('This is test content', content)
+    
+    def test_cmd_read_template_with_file_output(self):
+        """Test read command with template and file output."""
+        output_file = os.path.join(self.temp_dir, 'output.json')
+        template = '{"title": "$frontmatter.title", "author": "$frontmatter.author"}'
+        cmd_read([self.test_file], 'template', False, 'yaml', False, template, output_file)
+        
+        # Check that file was created
+        self.assertTrue(os.path.exists(output_file))
+        
+        # Check file content
+        with open(output_file, 'r') as f:
+            content = f.read()
+            self.assertIn('"title": "Test Post"', content)
+            self.assertIn('"author": "Test Author"', content)
+    
     def test_cmd_search_console_output(self):
         """Test search command with console output."""
         output = self.capture_output(cmd_search, [self.test_file], 'title')
@@ -223,7 +254,7 @@ Line two""")
     def test_main_version(self):
         """Test main function with version command."""
         output = self.capture_output(main)
-        self.assertIn('0.9.0', output)
+        self.assertIn('0.10.0', output)
     
     @patch('sys.argv', ['fmu', 'help'])
     def test_main_help(self):

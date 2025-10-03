@@ -164,7 +164,7 @@ def cmd_help():
 
 
 def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = False, format_type: str = "yaml", 
-             escape: bool = False, template: str = None, save_specs=None):
+             escape: bool = False, template: str = None, file_output: str = None, save_specs=None):
     """
     Handle read command.
     
@@ -175,6 +175,7 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
         format_type: Format of frontmatter
         escape: Whether to escape special characters
         template: Template string for output (required when output='template')
+        file_output: File path to save output (if None, output to console)
         save_specs: Tuple of (description, specs_file) for saving specs
     """
     # Validate template requirement
@@ -189,48 +190,65 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
             'output': output,
             'skip_heading': skip_heading,
             'escape': escape,
-            'template': template
+            'template': template,
+            'file': file_output
         })())
         save_specs_file(specs_file, 'read', description, patterns, options)
         print(f"Specs saved to {specs_file}")
         return
     
-    files = get_files_from_patterns(patterns)
-    
-    for file_path in files:
+    # Determine output destination
+    output_file = None
+    if file_output:
         try:
-            frontmatter, content = parse_file(file_path, format_type)
-            
-            # Apply escaping if needed
-            if escape:
-                content = _escape_string(content)
-                if frontmatter:
-                    frontmatter = _escape_frontmatter(frontmatter)
-            
-            if output == 'template':
-                # Render template
-                result = _render_template(template, file_path, frontmatter, content)
-                print(result)
-            else:
-                if len(files) > 1:
-                    print(f"\n=== {file_path} ===")
+            output_file = open(file_output, 'w', encoding='utf-8')
+            output_stream = output_file
+        except IOError as e:
+            print(f"Error: Cannot open file {file_output}: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        output_stream = sys.stdout
+    
+    try:
+        files = get_files_from_patterns(patterns)
+        
+        for file_path in files:
+            try:
+                frontmatter, content = parse_file(file_path, format_type)
                 
-                if output in ['frontmatter', 'both']:
-                    if not skip_heading:
-                        print("Front matter:")
+                # Apply escaping if needed
+                if escape:
+                    content = _escape_string(content)
                     if frontmatter:
-                        import yaml
-                        print(yaml.dump(frontmatter, default_flow_style=False).rstrip())
-                    else:
-                        print("None")
-                    
-                if output in ['content', 'both']:
-                    if output == 'both' and not skip_heading:
-                        print("\nContent:")
-                    print(content.rstrip())
+                        frontmatter = _escape_frontmatter(frontmatter)
                 
-        except (FileNotFoundError, ValueError, UnicodeDecodeError) as e:
-            print(f"Error processing {file_path}: {e}", file=sys.stderr)
+                if output == 'template':
+                    # Render template
+                    result = _render_template(template, file_path, frontmatter, content)
+                    print(result, file=output_stream)
+                else:
+                    if len(files) > 1:
+                        print(f"\n=== {file_path} ===", file=output_stream)
+                    
+                    if output in ['frontmatter', 'both']:
+                        if not skip_heading:
+                            print("Front matter:", file=output_stream)
+                        if frontmatter:
+                            import yaml
+                            print(yaml.dump(frontmatter, default_flow_style=False).rstrip(), file=output_stream)
+                        else:
+                            print("None", file=output_stream)
+                        
+                    if output in ['content', 'both']:
+                        if output == 'both' and not skip_heading:
+                            print("\nContent:", file=output_stream)
+                        print(content.rstrip(), file=output_stream)
+                    
+            except (FileNotFoundError, ValueError, UnicodeDecodeError) as e:
+                print(f"Error processing {file_path}: {e}", file=sys.stderr)
+    finally:
+        if output_file:
+            output_file.close()
 
 
 def cmd_search(
@@ -401,6 +419,10 @@ def create_parser():
     read_parser.add_argument(
         '--template',
         help='Template string for output (required when --output is template). Supports: $filename, $filepath, $content, $frontmatter.name, $frontmatter.name[index]'
+    )
+    read_parser.add_argument(
+        '--file',
+        help='Save output to file instead of console'
     )
     read_parser.add_argument(
         '--save-specs',
@@ -646,6 +668,7 @@ def main():
             format_type=args.format,
             escape=args.escape if hasattr(args, 'escape') else False,
             template=args.template if hasattr(args, 'template') else None,
+            file_output=args.file if hasattr(args, 'file') else None,
             save_specs=args.save_specs if hasattr(args, 'save_specs') else None
         )
     elif args.command == 'search':
