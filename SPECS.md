@@ -30,11 +30,23 @@ commands:
       - "posts/*.md"
     output: frontmatter
     skip_heading: true
+  
+  - command: read
+    description: export to JSON with template
+    patterns:
+      - "*.md"
+    output: template
+    template: '{ "title": "$frontmatter.title", "content": "$content" }'
+    escape: true
+    file: output.json
 ```
 
 **Options:**
-- `output`: What to output (`frontmatter`, `content`, or `both`)
+- `output`: What to output (`frontmatter`, `content`, `both`, or `template`) *(template added in v0.9.0)*
 - `skip_heading`: Whether to skip section headings (`true` or `false`)
+- `template`: Template string for custom output formatting *(New in v0.9.0)*
+- `escape`: Escape special characters in output (`true` or `false`) *(New in v0.9.0)*
+- `file`: Save output to file instead of console *(New in v0.10.0)*
 
 ### Search Command
 
@@ -85,6 +97,15 @@ commands:
     exist:
       - "author"
     csv: validation_report.csv
+  
+  - command: validate
+    description: tags must be non-empty and have 1-5 items
+    patterns:
+      - "*.md"
+    not_empty:
+      - "tags"
+    list_size:
+      - "tags 1 5"
 ```
 
 **Options:**
@@ -96,6 +117,8 @@ commands:
 - `not_contain`: Array of "field value" pairs for array non-containment checks
 - `match`: Array of "field regex" pairs for regex matching
 - `not_match`: Array of "field regex" pairs for regex non-matching
+- `not_empty`: Array of fields that must be non-empty arrays *(New in v0.8.0)*
+- `list_size`: Array of "field min max" triples for array size validation *(New in v0.8.0)*
 - `ignore_case`: Case-insensitive matching (`true` or `false`)
 - `csv`: Output to CSV file (file path)
 
