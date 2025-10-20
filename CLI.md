@@ -1,0 +1,402 @@
+# CLI Command Reference
+
+This document provides a comprehensive reference for all CLI commands and options available in the `fmu` (frontmatter-utils) tool.
+
+## Global Options
+
+- `--format FORMAT`: Format of frontmatter (default: yaml). May support TOML, JSON, INI in future versions.
+
+## Commands
+
+### `version`
+Show the version number.
+
+```bash
+fmu version
+```
+
+### `help`
+Show help information.
+
+```bash
+fmu help
+```
+
+### `read PATTERNS`
+Parse files and extract frontmatter and/or content.
+
+**Arguments:**
+- `PATTERNS`: One or more glob patterns, file paths, or directory paths
+
+**Options:**
+- `--output [frontmatter|content|both|template]`: What to output (default: both)
+- `--skip-heading`: Skip section headings (default: false)
+- `--escape`: Escape special characters in output (default: false) *(New in v0.9.0)*
+- `--template TEMPLATE`: Template string for output (required when --output is template) *(New in v0.9.0)*
+- `--file FILE`: Save output to file instead of console *(New in v0.10.0)*
+- `--save-specs DESCRIPTION FILE`: Save command configuration to specs file *(New in v0.5.0)*
+
+**Examples:**
+```bash
+# Read all markdown files in current directory
+fmu read "*.md"
+
+# Read specific files
+fmu read file1.md file2.md
+
+# Read all files in a directory
+fmu read docs/
+
+# Export with custom template (New in v0.9.0)
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title", "path": "$filepath" }'
+
+# Save output to file (New in v0.10.0)
+fmu read "*.md" --file output.txt
+
+# Save template output to JSON file (New in v0.10.0)
+fmu read "*.md" --output template --template '{ "title": "$frontmatter.title" }' --file data.json
+
+# Show only frontmatter
+fmu read "*.md" --output frontmatter
+
+# Show only content without headings
+fmu read "*.md" --output content --skip-heading
+
+# Save command to specs file
+fmu read "*.md" --output frontmatter --save-specs "read blog posts" specs.yaml
+```
+
+**Template Placeholders:**
+- `$filename`: Base filename (e.g., "post.md")
+- `$filepath`: Full file path
+- `$content`: Content after frontmatter
+- `$frontmatter.fieldname`: Access frontmatter field (single value or full array as JSON)
+- `$frontmatter.fieldname[N]`: Access array element by index (0-based)
+
+**Escape Option:**
+When `--escape` is used, the following characters are escaped:
+- Newline: `\n`
+- Carriage return: `\r`
+- Tab: `\t`
+- Single quote: `'` → `\'`
+- Double quote: `"` → `\"`
+
+### `search PATTERNS`
+Search for specific frontmatter fields.
+
+**Arguments:**
+- `PATTERNS`: One or more glob patterns, file paths, or directory paths
+
+**Options:**
+- `--name NAME`: **Required.** Name of the frontmatter field to search for
+- `--value VALUE`: Optional. Value of the frontmatter to match
+- `--ignore-case`: Case-insensitive matching (default: false)
+- `--regex`: Use regex pattern matching for values (default: false)
+- `--csv FILE`: Optional. Output results to specified CSV file
+- `--save-specs DESCRIPTION FILE`: Save command configuration to specs file *(New in v0.5.0)*
+
+**Examples:**
+```bash
+# Find all files with 'title' field
+fmu search "*.md" --name title
+
+# Find files where author is "John Doe"
+fmu search "*.md" --name author --value "John Doe"
+
+# Case-insensitive search
+fmu search "*.md" --name category --value "programming" --ignore-case
+
+# Search for 'python' in tags array
+fmu search "*.md" --name tags --value "python"
+
+# Regex search for tags ending with 'ing'
+fmu search "*.md" --name tags --value "ing$" --regex
+
+# Regex search for titles starting with "Guide"
+fmu search "*.md" --name title --value "^Guide" --regex
+
+# Case-insensitive regex search
+fmu search "*.md" --name author --value "john.*doe" --regex --ignore-case
+
+# Export to CSV
+fmu search "*.md" --name tags --csv tags_report.csv
+
+# Save command to specs file
+fmu search "*.md" --name tags --value "python" --save-specs "search python tags" specs.yaml
+```
+
+**Array Search (v0.2.0):**
+When searching array/list frontmatter fields, each element is checked against the search value.
+
+**Regex Support (v0.2.0):**
+Use regular expressions for flexible pattern matching. Supports Python's `re` module syntax including:
+- **Basic patterns**: `python`, `test`, etc.
+- **Anchors**: `^start`, `end$`, `^exact$`
+- **Character classes**: `[abc]`, `[a-z]`, `\d`, `\w`, `\s`
+- **Quantifiers**: `*`, `+`, `?`, `{n}`, `{n,m}`
+- **Groups**: `(pattern)`, `(?:pattern)`
+- **Alternation**: `pattern1|pattern2`
+- **Case-insensitive**: Use `--ignore-case` flag
+
+### `validate PATTERNS`
+Validate frontmatter fields against custom rules.
+
+**Arguments:**
+- `PATTERNS`: One or more glob patterns, file paths, or directory paths
+
+**Validation Options:**
+- `--exist FIELD`: **Repeatable.** Require field to exist
+- `--not FIELD`: **Repeatable.** Require field to not exist
+- `--eq FIELD VALUE`: **Repeatable.** Require field equals value
+- `--ne FIELD VALUE`: **Repeatable.** Require field not equals value
+- `--contain FIELD VALUE`: **Repeatable.** Require array field contains value
+- `--not-contain FIELD VALUE`: **Repeatable.** Require array field does not contain value
+- `--match FIELD REGEX`: **Repeatable.** Require field matches regex pattern
+- `--not-match FIELD REGEX`: **Repeatable.** Require field does not match regex pattern
+- `--not-empty FIELD`: **Repeatable.** Require array field has at least one value *(New in v0.8.0)*
+- `--list-size FIELD MIN MAX`: **Repeatable.** Require array field has between MIN and MAX values (inclusive) *(New in v0.8.0)*
+
+**General Options:**
+- `--ignore-case`: Case-insensitive matching (default: false)
+- `--csv FILE`: Optional. Output validation failures to specified CSV file
+- `--save-specs DESCRIPTION FILE`: Save command configuration to specs file *(New in v0.5.0)*
+
+**Examples:**
+```bash
+# Validate required fields exist
+fmu validate "*.md" --exist title --exist author
+
+# Validate fields don't exist
+fmu validate "*.md" --not draft --not private
+
+# Validate field values
+fmu validate "*.md" --eq status "published" --ne category "deprecated"
+
+# Validate array contents
+fmu validate "*.md" --contain tags "tech" --not-contain tags "obsolete"
+
+# Validate using regex patterns
+fmu validate "*.md" --match title "^[A-Z].*" --not-match content "TODO"
+
+# Validate array is not empty (v0.8.0)
+fmu validate "*.md" --not-empty tags
+
+# Validate array size (v0.8.0)
+fmu validate "*.md" --list-size tags 1 5
+
+# Case-insensitive validation
+fmu validate "*.md" --eq STATUS "published" --ignore-case
+
+# Multiple validation rules
+fmu validate "blog/*.md" \
+  --exist title \
+  --exist author \
+  --eq status "published" \
+  --contain tags "tech" \
+  --match date "^\d{4}-\d{2}-\d{2}$"
+
+# Export failures to CSV
+fmu validate "*.md" --exist title --csv validation_report.csv
+
+# Save command to specs file
+fmu validate "*.md" --exist title --match "title ^.{0,50}$" --save-specs "validate titles" specs.yaml
+```
+
+### `update PATTERNS` *(New in v0.4.0)*
+Update frontmatter fields in files with various transformations.
+
+**Arguments:**
+- `PATTERNS`: One or more glob patterns, file paths, or directory paths
+
+**Required Options:**
+- `--name FIELD`: **Required.** Name of the frontmatter field to update
+
+**Update Operations:**
+- `--case CASE_TYPE`: Transform case of values. Options: `upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`
+- `--replace FROM TO`: **Repeatable.** Replace values matching FROM with TO
+- `--remove VALUE`: **Repeatable.** Remove values matching VALUE
+
+**Shared Operation Options:**
+- `--ignore-case`: Ignore case when performing replacements and removals (default: false)
+- `--regex`: Treat patterns as regex for replacements and removals (default: false)
+
+**General Options:**
+- `--deduplication {true,false}`: Eliminate exact duplicates in array values (default: true, applied last)
+- `--save-specs DESCRIPTION FILE`: Save command configuration to specs file *(New in v0.5.0)*
+
+**Examples:**
+```bash
+# Transform case of values
+fmu update "*.md" --name title --case "Title Case"
+fmu update "*.md" --name author --case lower
+fmu update "*.md" --name tags --case kebab-case
+
+# Replace values (substring replacement)
+fmu update "*.md" --name status --replace draft published
+fmu update "*.md" --name category --replace "old-name" "new-name"
+
+# Case-insensitive replacement
+fmu update "*.md" --name tags --replace Python python --ignore-case
+
+# Regex-based replacement
+fmu update "*.md" --name content --replace "TODO:.*" "DONE" --regex
+
+# Remove specific values
+fmu update "*.md" --name tags --remove "deprecated"
+fmu update "*.md" --name status --remove "draft"
+
+# Remove with regex patterns
+fmu update "*.md" --name tags --remove "^test.*" --regex
+
+# Deduplication only (v0.8.0 fix)
+fmu update "*.md" --name categories --deduplication true
+
+# Multiple operations (applied in sequence: case, replace, remove, then deduplication)
+fmu update "*.md" --name tags \
+  --case lower \
+  --replace python programming \
+  --remove deprecated
+
+# Disable deduplication
+fmu update "*.md" --name tags --deduplication false --case lower
+
+# Complex update example
+fmu update "blog/*.md" \
+  --name tags \
+  --case lower \
+  --replace "javascript" "js" \
+  --replace "python" "py" \
+  --remove "deprecated" \
+  --remove "old" \
+  --deduplication true
+
+# Save command to specs file
+fmu update "*.md" --name title --case "Title Case" --save-specs "title case" specs.yaml
+```
+
+**Case Transformations:**
+- `upper`: UPPERCASE
+- `lower`: lowercase
+- `Sentence case`: Sentence case (first letter capitalized)
+- `Title Case`: Title Case (capitalize each word)
+- `snake_case`: snake_case (lowercase with underscores)
+- `kebab-case`: kebab-case (lowercase with hyphens)
+
+**Note:** Case transformations properly handle contractions (e.g., "can't" → "Can't", not "Can'T") as of v0.8.0.
+
+### `execute SPECS_FILE` *(New in v0.6.0)*
+Execute all commands stored in a specs file.
+
+**Arguments:**
+- `SPECS_FILE`: Path to the YAML specs file containing commands
+
+**Options:**
+- `--yes`: Skip all confirmation prompts and execute all commands automatically
+
+**Examples:**
+```bash
+# Execute commands with confirmation prompts
+fmu execute commands.yaml
+
+# Execute commands without confirmation prompts
+fmu execute commands.yaml --yes
+```
+
+**Behavior:**
+- Commands are executed sequentially in the order they appear in the specs file
+- Before each command, displays: `------------\n[command text]\n------------\n`
+- Without `--yes`, prompts: `Proceed with the above command? Answer yes or no`
+- After all commands complete, displays execution statistics:
+  - Number of commands executed
+  - Total elapsed time
+  - Total execution time (excluding user confirmation waits)
+  - Average execution time per command
+  - Breakdown by command type (e.g., `read: 0, validate: 1, update: 3`)
+
+**Note:** Each command in the specs file can specify its own output destination (console or file via `--file` option), allowing for flexible output workflows.
+
+## Output Formats
+
+### Console Output
+
+#### Read Command
+```
+Front matter:
+title: Example Post
+author: John Doe
+tags: [python, tutorial]
+
+Content:
+This is the main content of the post.
+```
+
+#### Search Command
+```
+/path/to/file1.md:
+- title: Example Post
+
+/path/to/file2.md:
+- author: John Doe
+```
+
+#### Validate Command
+```
+/path/to/file1.md:
+- 	author: None --> Field 'author' does not exist
+
+/path/to/file2.md:
+- 	status: draft --> Field 'status' value 'draft' does not equal 'published'
+```
+
+### CSV Output
+
+#### Search Command
+When using the `--csv` option with search, output includes:
+
+| File Path | Front Matter Name | Front Matter Value |
+|-----------|-------------------|-------------------|
+| /path/to/file1.md | title | Example Post |
+| /path/to/file2.md | author | John Doe |
+
+#### Validate Command
+When using the `--csv` option with validate, output includes:
+
+| File Path | Front Matter Name | Front Matter Value | Failure Reason |
+|-----------|-------------------|--------------------|-----------------|
+| /path/to/file1.md | author | | Field 'author' does not exist |
+| /path/to/file2.md | status | draft | Field 'status' value 'draft' does not equal 'published' |
+
+## Error Handling
+
+The CLI handles various error conditions gracefully:
+
+- **File not found**: Reports error for each missing file
+- **Invalid YAML**: Reports parsing errors with details
+- **Encoding issues**: Reports non-UTF-8 file encoding errors
+- **Invalid format**: Reports unsupported format errors
+- **Missing required options**: Displays usage information
+- **Invalid regex**: Reports regex compilation errors
+
+## File Format Support
+
+### YAML Frontmatter
+
+Currently supported format. Frontmatter must be delimited by `---`:
+
+```markdown
+---
+title: My Post
+author: John Doe
+tags: [python, web]
+published: true
+---
+
+Content goes here.
+```
+
+### Future Format Support
+
+Future versions may support:
+- TOML frontmatter
+- JSON frontmatter  
+- INI frontmatter
