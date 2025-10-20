@@ -5,6 +5,10 @@ Update functionality for frontmatter fields.
 import re
 import csv
 import sys
+import hashlib
+import random
+import string
+from datetime import datetime
 from typing import List, Dict, Any, Union, Optional
 from .core import parse_file, get_files_from_patterns
 import yaml
@@ -187,6 +191,255 @@ def deduplicate_array(value: Any) -> Any:
         return value
 
 
+def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str, Any], content: str) -> Any:
+    """
+    Resolve a placeholder reference.
+    
+    Args:
+        placeholder: Placeholder string (e.g., "$filename", "$frontmatter.title")
+        file_path: Full path to the file
+        frontmatter: Frontmatter dictionary
+        content: Content string
+        
+    Returns:
+        Resolved value
+    """
+    import os
+    
+    if placeholder == '$filename':
+        return os.path.basename(file_path)
+    elif placeholder == '$filepath':
+        return file_path
+    elif placeholder == '$content':
+        return content
+    elif placeholder.startswith('$frontmatter.'):
+        # Extract field name and optional index
+        pattern = r'\$frontmatter\.([a-zA-Z_][a-zA-Z0-9_]*)(?:\[(\d+)\])?'
+        match = re.match(pattern, placeholder)
+        if match:
+            field_name = match.group(1)
+            index_str = match.group(2)
+            
+            if field_name not in frontmatter:
+                return placeholder  # Return placeholder if field not found
+            
+            value = frontmatter[field_name]
+            
+            if index_str is not None:
+                # Array indexing
+                index = int(index_str)
+                if isinstance(value, list) and 0 <= index < len(value):
+                    return value[index]
+                else:
+                    return placeholder
+            else:
+                return value
+    
+    return placeholder
+
+
+def _parse_function_call(formula: str) -> tuple:
+    """
+    Parse a function call from a formula.
+    
+    Args:
+        formula: Formula string starting with '='
+        
+    Returns:
+        Tuple of (function_name, parameters)
+    """
+    # Remove the leading '='
+    formula = formula[1:].strip()
+    
+    # Parse function name and parameters
+    # Pattern: function_name(param1, param2, ...)
+    match = re.match(r'([a-zA-Z_][a-zA-Z0-9_]*)\((.*)\)$', formula)
+    if not match:
+        return None, []
+    
+    function_name = match.group(1)
+    params_str = match.group(2)
+    
+    # Parse parameters - handle quoted strings and nested commas
+    parameters = []
+    if params_str.strip():
+        # Simple parameter parsing - split by comma but respect quotes
+        current_param = []
+        in_quotes = False
+        quote_char = None
+        
+        for char in params_str:
+            if char in ('"', "'") and not in_quotes:
+                in_quotes = True
+                quote_char = char
+            elif char == quote_char and in_quotes:
+                in_quotes = False
+                quote_char = None
+            elif char == ',' and not in_quotes:
+                param = ''.join(current_param).strip()
+                if param:
+                    # Remove quotes if present
+                    if (param.startswith('"') and param.endswith('"')) or \
+                       (param.startswith("'") and param.endswith("'")):
+                        param = param[1:-1]
+                    parameters.append(param)
+                current_param = []
+                continue
+            
+            current_param.append(char)
+        
+        # Don't forget the last parameter
+        param = ''.join(current_param).strip()
+        if param:
+            # Remove quotes if present
+            if (param.startswith('"') and param.endswith('"')) or \
+               (param.startswith("'") and param.endswith("'")):
+                param = param[1:-1]
+            parameters.append(param)
+    
+    return function_name, parameters
+
+
+def _execute_function(function_name: str, parameters: List[Any]) -> Any:
+    """
+    Execute a built-in function.
+    
+    Args:
+        function_name: Name of the function to execute
+        parameters: List of parameters (already resolved)
+        
+    Returns:
+        Result of function execution
+    """
+    if function_name == 'now':
+        # Return current datetime in ISO 8601 format
+        from datetime import timezone
+        return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    
+    elif function_name == 'list':
+        # Return an empty list
+        return []
+    
+    elif function_name == 'hash':
+        # Create a hash of the given string with specified length
+        if len(parameters) < 2:
+            raise ValueError("hash() requires 2 parameters: string and hash_length")
+        
+        string_to_hash = str(parameters[0])
+        try:
+            hash_length = int(parameters[1])
+        except (ValueError, TypeError):
+            raise ValueError("hash_length must be an integer")
+        
+        # Create a deterministic hash using SHA256
+        hash_obj = hashlib.sha256(string_to_hash.encode('utf-8'))
+        hash_hex = hash_obj.hexdigest()
+        
+        # Use only alphanumeric characters and trim to requested length
+        # Use the hex representation and convert to alphanumeric
+        result = hash_hex[:hash_length]
+        
+        return result
+    
+    elif function_name == 'concat':
+        # Concatenate all parameters
+        return ''.join(str(param) for param in parameters)
+    
+    else:
+        raise ValueError(f"Unknown function: {function_name}")
+
+
+def evaluate_formula(
+    formula: str,
+    file_path: str,
+    frontmatter: Dict[str, Any],
+    content: str
+) -> Any:
+    """
+    Evaluate a compute formula.
+    
+    Args:
+        formula: Formula to evaluate (literal, placeholder, or function)
+        file_path: Full path to the file
+        frontmatter: Frontmatter dictionary
+        content: Content string
+        
+    Returns:
+        Evaluated result
+    """
+    # Check if it's a function call
+    if formula.startswith('='):
+        function_name, parameters = _parse_function_call(formula)
+        if function_name:
+            # Resolve parameters (they may contain placeholders)
+            resolved_params = []
+            for param in parameters:
+                if param.startswith('$'):
+                    resolved_params.append(_resolve_placeholder(param, file_path, frontmatter, content))
+                else:
+                    resolved_params.append(param)
+            
+            return _execute_function(function_name, resolved_params)
+        else:
+            # Invalid function syntax, treat as literal
+            return formula
+    
+    # Check if it's a placeholder
+    elif formula.startswith('$'):
+        return _resolve_placeholder(formula, file_path, frontmatter, content)
+    
+    # Otherwise, it's a literal value
+    else:
+        return formula
+
+
+def apply_compute_operation(
+    frontmatter: Dict[str, Any],
+    frontmatter_name: str,
+    formula: str,
+    file_path: str,
+    content: str
+) -> tuple:
+    """
+    Apply compute operation to frontmatter.
+    
+    Args:
+        frontmatter: Frontmatter dictionary
+        frontmatter_name: Name of frontmatter field
+        formula: Formula to compute
+        file_path: Full path to the file
+        content: Content string
+        
+    Returns:
+        Tuple of (updated_frontmatter, changes_made)
+    """
+    # Evaluate the formula
+    computed_value = evaluate_formula(formula, file_path, frontmatter, content)
+    
+    changes_made = False
+    
+    # Check if frontmatter field exists
+    if frontmatter_name in frontmatter:
+        current_value = frontmatter[frontmatter_name]
+        
+        # If current value is a list, append the computed value
+        if isinstance(current_value, list):
+            current_value.append(computed_value)
+            frontmatter[frontmatter_name] = current_value
+            changes_made = True
+        else:
+            # Replace the current value
+            if frontmatter[frontmatter_name] != computed_value:
+                frontmatter[frontmatter_name] = computed_value
+                changes_made = True
+    else:
+        # Create the frontmatter field
+        frontmatter[frontmatter_name] = computed_value
+        changes_made = True
+    
+    return frontmatter, changes_made
+
+
 def update_frontmatter(
     patterns: List[str],
     frontmatter_name: str,
@@ -222,8 +475,11 @@ def update_frontmatter(
             changes_made = False
             original_value = frontmatter_data.get(frontmatter_name)
             
-            # Skip if frontmatter field doesn't exist
-            if frontmatter_name not in frontmatter_data:
+            # Handle compute operations differently - they can create fields
+            has_compute_operation = any(op['type'] == 'compute' for op in operations)
+            
+            # Skip if frontmatter field doesn't exist AND no compute operation
+            if frontmatter_name not in frontmatter_data and not has_compute_operation:
                 results.append({
                     'file_path': file_path,
                     'field': frontmatter_name,
@@ -234,38 +490,54 @@ def update_frontmatter(
                 })
                 continue
             
-            current_value = frontmatter_data[frontmatter_name]
+            current_value = frontmatter_data.get(frontmatter_name)
             
             # Apply operations in order
             for operation in operations:
                 op_type = operation['type']
                 
-                if op_type == 'case':
-                    current_value = apply_case_transformation(current_value, operation['case_type'])
-                    changes_made = True
+                if op_type == 'compute':
+                    # Compute operations can create fields, so handle specially
+                    frontmatter_data, op_changes = apply_compute_operation(
+                        frontmatter_data,
+                        frontmatter_name,
+                        operation['formula'],
+                        file_path,
+                        content
+                    )
+                    if op_changes:
+                        changes_made = True
+                    current_value = frontmatter_data.get(frontmatter_name)
+                    
+                elif op_type == 'case':
+                    if current_value is not None:
+                        current_value = apply_case_transformation(current_value, operation['case_type'])
+                        changes_made = True
                     
                 elif op_type == 'replace':
-                    new_value = apply_replace_operation(
-                        current_value,
-                        operation['from'],
-                        operation['to'],
-                        operation.get('ignore_case', False),
-                        operation.get('regex', False)
-                    )
-                    if new_value != current_value:
-                        current_value = new_value
-                        changes_made = True
+                    if current_value is not None:
+                        new_value = apply_replace_operation(
+                            current_value,
+                            operation['from'],
+                            operation['to'],
+                            operation.get('ignore_case', False),
+                            operation.get('regex', False)
+                        )
+                        if new_value != current_value:
+                            current_value = new_value
+                            changes_made = True
                         
                 elif op_type == 'remove':
-                    new_value = apply_remove_operation(
-                        current_value,
-                        operation['value'],
-                        operation.get('ignore_case', False),
-                        operation.get('regex', False)
-                    )
-                    if new_value != current_value:
-                        current_value = new_value
-                        changes_made = True
+                    if current_value is not None:
+                        new_value = apply_remove_operation(
+                            current_value,
+                            operation['value'],
+                            operation.get('ignore_case', False),
+                            operation.get('regex', False)
+                        )
+                        if new_value != current_value:
+                            current_value = new_value
+                            changes_made = True
                         
                 elif op_type == 'deduplication':
                     # Handle deduplication as a standalone operation
@@ -282,14 +554,18 @@ def update_frontmatter(
                     current_value = deduplicated_value
                     changes_made = True
             
-            # Handle removal of scalar fields
-            if current_value is None and not isinstance(original_value, list):
-                # Remove the field entirely
-                del frontmatter_data[frontmatter_name]
-                changes_made = True
-            else:
-                # Update the field
-                frontmatter_data[frontmatter_name] = current_value
+            # Update frontmatter_data with current_value (except for compute which already updated it)
+            if not has_compute_operation or any(op['type'] != 'compute' for op in operations):
+                # Handle removal of scalar fields
+                if current_value is None and not isinstance(original_value, list):
+                    # Remove the field entirely
+                    if frontmatter_name in frontmatter_data:
+                        del frontmatter_data[frontmatter_name]
+                        changes_made = True
+                else:
+                    # Update the field
+                    if frontmatter_name in frontmatter_data or current_value is not None:
+                        frontmatter_data[frontmatter_name] = current_value
             
             # Save changes back to file if any were made
             if changes_made:
@@ -340,7 +616,7 @@ def update_frontmatter(
                     'file_path': file_path,
                     'field': frontmatter_name,
                     'original_value': original_value,
-                    'new_value': current_value if frontmatter_name in frontmatter_data else None,
+                    'new_value': frontmatter_data.get(frontmatter_name),
                     'changes_made': changes_made,
                     'reason': 'Updated successfully'
                 })

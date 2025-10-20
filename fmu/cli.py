@@ -501,6 +501,13 @@ def create_parser():
         help='Transform the case of the frontmatter value(s)'
     )
     
+    # Compute operation
+    update_parser.add_argument(
+        '--compute',
+        action='append',
+        help='Compute and set frontmatter value using formula (literal, placeholder, or function call). Can be used multiple times.'
+    )
+    
     # Replace operations (can appear multiple times)
     update_parser.add_argument(
         '--replace',
@@ -550,6 +557,14 @@ def create_parser():
 def _parse_update_args(args) -> List[Dict[str, Any]]:
     """Parse update arguments into update operations."""
     operations = []
+    
+    # Handle --compute operations
+    if hasattr(args, 'compute') and args.compute:
+        for formula in args.compute:
+            operations.append({
+                'type': 'compute',
+                'formula': formula
+            })
     
     # Handle --case
     if args.case:
