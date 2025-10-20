@@ -326,6 +326,21 @@ Update README file with comprehensive instruction on getting started and how to 
 Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
 
 
+
+# Version 0.11.0 - Reorganize project documentation
+
+Revise the project documentation: Ensure informationa and examples about the commands and supported options (both global and command-specific) are captured and updated to the current source code
+
+- README.md:
+  + Retain the Features, Installation, Getting started, Changelog, and Mics sections
+  + Spin-off the CLI command references and Library API references to their own .md files
+- SPECS.md: ensure informationa and examples about the commands and supported options (both global and command-specific) are captured and updated to the current source code
+
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
+
+
 # Future versions -- do not execute unless explicitly prompt
 
 
