@@ -46,7 +46,7 @@ This is test content.""")
     def test_cmd_version(self):
         """Test version command."""
         output = self.capture_output(cmd_version)
-        self.assertIn('0.11.0', output)
+        self.assertIn('0.12.0', output)
     
     def test_cmd_help(self):
         """Test help command."""
@@ -254,7 +254,7 @@ Line two""")
     def test_main_version(self):
         """Test main function with version command."""
         output = self.capture_output(main)
-        self.assertIn('0.11.0', output)
+        self.assertIn('0.12.0', output)
     
     @patch('sys.argv', ['fmu', 'help'])
     def test_main_help(self):

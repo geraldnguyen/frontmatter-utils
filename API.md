@@ -267,6 +267,11 @@ Update frontmatter fields in files with various transformations.
 
 **Operation Types:**
 ```python
+# Compute operation (v0.12.0)
+{'type': 'compute', 'formula': 'literal_value'}  # Literal value
+{'type': 'compute', 'formula': '$filename'}  # Placeholder reference
+{'type': 'compute', 'formula': '=now()'}  # Function call
+
 # Case transformation
 {'type': 'case', 'case_type': 'upper'}  
 # Options: 'upper', 'lower', 'Sentence case', 'Title Case', 'snake_case', 'kebab-case'
@@ -282,7 +287,50 @@ Update frontmatter fields in files with various transformations.
 ```python
 from fmu import update_frontmatter
 
-# Define update operations
+# Compute operations (v0.12.0)
+
+# Set literal value (creates field if doesn't exist)
+operations = [{'type': 'compute', 'formula': '1'}]
+results = update_frontmatter(['index.md'], 'edition', operations, deduplication=False)
+
+# Set value using now() function
+operations = [{'type': 'compute', 'formula': '=now()'}]
+results = update_frontmatter(['*.md'], 'last_update', operations, deduplication=False)
+
+# Create empty list
+operations = [{'type': 'compute', 'formula': '=list()'}]
+results = update_frontmatter(['index.md'], 'aliases', operations, deduplication=False)
+
+# Append to existing list
+operations = [{'type': 'compute', 'formula': '/newest-alias'}]
+results = update_frontmatter(['index.md'], 'aliases', operations, deduplication=False)
+
+# Create hash from frontmatter field
+operations = [{'type': 'compute', 'formula': '=hash($frontmatter.url, 10)'}]
+results = update_frontmatter(['*.md'], 'content_id', operations, deduplication=False)
+
+# Concatenate strings
+operations = [{'type': 'compute', 'formula': '=concat(/post/, $frontmatter.content_id)'}]
+results = update_frontmatter(['*.md'], 'aliases', operations, deduplication=False)
+
+# Use placeholder references
+operations = [{'type': 'compute', 'formula': '$filename'}]
+results = update_frontmatter(['*.md'], 'source_file', operations, deduplication=False)
+
+# Multiple compute operations example (builds an alias)
+# Step 1: Create empty aliases list
+operations = [{'type': 'compute', 'formula': '=list()'}]
+results = update_frontmatter(['index.md'], 'aliases', operations, deduplication=False)
+
+# Step 2: Create content_id from hash
+operations = [{'type': 'compute', 'formula': '=hash($frontmatter.url, 10)'}]
+results = update_frontmatter(['index.md'], 'content_id', operations, deduplication=False)
+
+# Step 3: Add alias using concat
+operations = [{'type': 'compute', 'formula': '=concat(/post/, $frontmatter.content_id)'}]
+results = update_frontmatter(['index.md'], 'aliases', operations, deduplication=False)
+
+# Define update operations (traditional operations)
 operations = [
     {'type': 'case', 'case_type': 'lower'},
     {'type': 'replace', 'from': 'python', 'to': 'programming', 'ignore_case': False, 'regex': False},
@@ -360,6 +408,110 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 - **Array Deduplication**: Automatic removal of exact duplicates in array values
 - **Multiple Operations**: Apply multiple transformations in sequence
 - **In-place Updates**: Modify files directly while preserving original structure
+
+**New Features (v0.12.0):**
+- **Compute Operations**: Calculate and set frontmatter values using formulas
+- **Placeholder References**: Access file metadata and other frontmatter fields
+- **Built-in Functions**: now(), list(), hash(), concat() for dynamic value generation
+- **Auto-create Fields**: Compute operations can create frontmatter fields that don't exist
+- **List Append**: Automatically append computed values to existing list fields
+
+## Compute Functions *(New in v0.12.0)*
+
+The update operations support compute formulas that can be:
+- **Literal values**: `1`, `2nd`, `just any text`
+- **Placeholder references**: `$filename`, `$filepath`, `$content`, `$frontmatter.name`, `$frontmatter.name[index]`
+- **Function calls**: `=function_name(param1, param2, ...)`
+
+### Built-in Compute Functions
+
+#### `now()`
+Return current datetime in ISO 8601 format.
+
+**Returns:** String in format `YYYY-MM-DDTHH:MM:SSZ` (e.g., `2025-10-20T00:30:00Z`)
+
+**Example:**
+```python
+operations = [{'type': 'compute', 'formula': '=now()'}]
+results = update_frontmatter(['*.md'], 'last_update', operations, deduplication=False)
+```
+
+#### `list()`
+Return an empty list.
+
+**Returns:** Empty list `[]`
+
+**Example:**
+```python
+operations = [{'type': 'compute', 'formula': '=list()'}]
+results = update_frontmatter(['index.md'], 'aliases', operations, deduplication=False)
+```
+
+#### `hash(string, hash_length)`
+Create a fixed-length hash of a string.
+
+**Parameters:**
+- `string`: String to hash (can be a placeholder reference)
+- `hash_length`: Integer length of the resulting hash
+
+**Returns:** Hexadecimal hash string of specified length
+
+**Example:**
+```python
+operations = [{'type': 'compute', 'formula': '=hash($frontmatter.url, 10)'}]
+results = update_frontmatter(['*.md'], 'content_id', operations, deduplication=False)
+```
+
+#### `concat(string1, string2, ...)`
+Concatenate 2 or more strings.
+
+**Parameters:**
+- `string1, string2, ...`: Strings to concatenate (can be placeholder references or literals)
+
+**Returns:** Concatenated string
+
+**Example:**
+```python
+operations = [{'type': 'compute', 'formula': '=concat(/post/, $frontmatter.content_id)'}]
+results = update_frontmatter(['*.md'], 'short_url', operations, deduplication=False)
+```
+
+### Placeholder References
+
+- `$filename`: Base filename (e.g., "post.md")
+- `$filepath`: Full file path
+- `$content`: Content after frontmatter
+- `$frontmatter.fieldname`: Access frontmatter field (single value or array)
+- `$frontmatter.fieldname[N]`: Access array element by index (0-based)
+
+### Compute Operation Behavior
+
+The compute operation has special behavior compared to other update operations:
+
+1. **Field Creation**: If the frontmatter field doesn't exist, it will be created
+2. **Scalar Replacement**: If the field exists and is a scalar value, it will be replaced
+3. **List Append**: If the field exists and is a list, the computed value will be appended
+
+**Example:**
+```python
+# File initially has: title: "Test"
+
+# Creates new field
+operations = [{'type': 'compute', 'formula': '1'}]
+results = update_frontmatter(['file.md'], 'edition', operations, deduplication=False)
+# Result: title: "Test", edition: 1
+
+# Replaces scalar field
+operations = [{'type': 'compute', 'formula': '2'}]
+results = update_frontmatter(['file.md'], 'edition', operations, deduplication=False)
+# Result: title: "Test", edition: 2
+
+# Appends to list field
+# File has: aliases: ['/old']
+operations = [{'type': 'compute', 'formula': '/new'}]
+results = update_frontmatter(['file.md'], 'aliases', operations, deduplication=False)
+# Result: aliases: ['/old', '/new']
+```
 
 ## Template Functions *(New in v0.9.0)*
 
