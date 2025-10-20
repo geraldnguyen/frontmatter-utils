@@ -339,6 +339,115 @@ Revise the project documentation: Ensure informationa and examples about the com
 
 Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
 
+# Version 0.12.0 - introduce feature: update command's --compute option
+
+Enhance the "update" command with a new "--compute [formula]" option:
+
+**Only for the "--compute" option**: 
+- if the front matter does not exist, create the front matter and assign it the value obtained from executing the "--compute" option. If the front matter exist, replace its current value by the new value.
+- If the front matter is a list, add the new value to the end of the list
+
+`[formula]` can be:
+- A literal value e.g. `1` or `2nd` or `just any thing`
+- A placeholder reference (see below)
+- A function call e.g. `=function_name(parameter1, parameter2, ...)`. Each parameter can be either a literal value or a placeholder reference
+
+The specification support the same placeholder reference as with the Read command's template output specification
+- $filename
+- $filepath
+- $content
+- $frontmatter.name: a single value or an array
+- $frontmatter.name[number] if `$frontmatter.name` is an array
+
+The following function are supported:
+- `now()`: return current date time e.g. `2025-10-20T00:30:00Z`
+- `list()`: return an empty list
+- `hash(string, hash_length)`: create a fixed-length `hash_length` random alphanumeric hash of the `string` parameter.
+- `concat(string, string, string, ...)`: concatenate 2 or more string parameters
+
+## Example 1: update a front matter's value
+
+Assume we have the following front matter:
+
+```
+title: a book title
+edition: 1
+last_update: 2024-01-31T00:30:00Z
+url: /post/original/a-book-title
+aliases:
+- /old-alias
+- /newer-alias
+```
+
+- `update index.md --name edition --compute 2`: formula evaluated to a literal value `2` --> update the front matter "edition" to `edition: 2`
+- `update index.md --name edition --compute 2nd`: formula evaluated to a literal value `2nd` --> update the front matter "edition" to `edition: 2nd`
+- `update index.md --name last_update --compute "=now()"`: formula evaluated to the `now()` function  --> update the front matter "last_update" to `last_update: 2025-10-20T00:30:00Z`
+- `update index.md --name aliases --compute "/newest-alias"`: formula evaluated to a literal value `/newest-alias`. Because `aliases` front matter's value is a list, the literal is added to the end of the list
+
+```
+aliases:
+- /old-alias
+- /newer-alias
+- /newest-alias
+```
+
+## Example 2: Create a front matter if it does not exists
+
+```
+title: a book title
+```
+
+- `update index.md --name edition --compute =1`: create a new front matter `edition: 1`
+- `update index.md --name edition --compute 2nd`: formula evaluated to a literal value `2nd` --> create a new front matter `edition: 2nd`
+- `update index.md --name last_update --compute "=now()"`: formula evaluated to the `now()` function  --> create a new front matter  `last_update: 2025-10-20T00:30:00Z`
+- `update index.md --name aliases --compute "=list()"`: formula evaluated to the `list()` function  --> create a new front matter  `aliases: []`
+- `update index.md --name content_id --compute "=hash($frontmatter.url, 10)"`: formula evaluated to the `hash` function taking in the value of `url` front matter and a length of 10. Assume the hash function return `ad2121343c` value, the `content_id` front matter is updated to: `content_id: ad2121343c`
+
+## Example 3: combining multiple `--compute` to calculate an alias
+
+We start with the following front matter
+
+```
+title: a book title
+```
+
+**Step 1**: create a empty `aliases` front matter: `update index.md --name aliases --compute "=list()"`
+
+```
+title: a book title
+aliases: []
+content_id: ad2121343c
+```
+
+**Step 2**: create a `content_id` front matter derived from the `url` front matter: `update index.md --name content_id --compute "=hash($frontmatter.url, 10)"`
+
+```
+title: a book title
+aliases: []
+content_id: ad2121343c
+```
+
+**Step 3**: Add an actual shorten alias to the `aliases` front matter: `update index.md --name aliases --compute "=concat(/post/, $frontmatter.content_id)`. The `concat` function concatenate the literal `/post/` with the value of `content_id` and return the string `/post/ad2121343c`
+
+```
+title: a book title
+aliases: [ '/post/ad2121343c']
+content_id: ad2121343c
+```
+
+
+## General requirements
+
+Update or expose correcting library functions to support the above changes in CLI.
+
+Save all dependencies in the requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI. Capture the changelog in the README.md too.
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
 
 
 # Future versions -- do not execute unless explicitly prompt
