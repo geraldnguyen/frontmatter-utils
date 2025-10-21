@@ -288,6 +288,27 @@ For detailed information about using fmu, see:
 
 ## Changelog
 
+### Version 0.13.0
+
+- **Slice Function for Compute Operations**
+  - New `slice()` function for list slicing in `--compute` option
+  - Support for Python-like slicing syntax: `slice(list, start)`, `slice(list, start, stop)`, `slice(list, start, stop, step)`
+  - Negative indices support for reverse indexing (e.g., `-1` for last element)
+  - Negative step support for reverse iteration
+- **Enhanced Compute Behavior**
+  - When computed value is a list (e.g., from `slice()`), it now replaces the entire list instead of appending
+  - Maintains backward compatibility: scalar computed values still append to list fields
+- **Use Cases**
+  - Extract last element: `=slice($frontmatter.aliases, -1)`
+  - Get first N elements: `=slice($frontmatter.tags, 0, 3)`
+  - Filter with step: `=slice($frontmatter.items, 0, 10, 2)` (every other element)
+  - Reverse lists: `=slice($frontmatter.list, -1, 0, -1)`
+- **Documentation**
+  - Updated CLI.md with slice function examples
+  - Updated API.md with slice function specifications
+  - Updated SPECS.md with slice function usage
+  - All 182 tests passing (18 new tests for slice functionality)
+
 ### Version 0.12.0
 
 - **Compute Operations**

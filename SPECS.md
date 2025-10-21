@@ -176,6 +176,14 @@ commands:
     name: aliases
     compute:
       - "=concat(/post/, $frontmatter.content_id)"
+  
+  - command: update
+    description: keep only last alias (v0.13.0)
+    patterns:
+      - "*.md"
+    name: aliases
+    compute:
+      - "=slice($frontmatter.aliases, -1)"
 ```
 
 **Options:**
@@ -198,6 +206,9 @@ commands:
 - `list()`: Empty list
 - `hash(string, length)`: Fixed-length hash of string
 - `concat(str1, str2, ...)`: Concatenate strings
+- `slice(list, start)`: Slice list from start to end *(New in v0.13.0)*
+- `slice(list, start, stop)`: Slice list from start to stop (exclusive) *(New in v0.13.0)*
+- `slice(list, start, stop, step)`: Slice list with step interval *(New in v0.13.0)*
 
 ## Usage
 
