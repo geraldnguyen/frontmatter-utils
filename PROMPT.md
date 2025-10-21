@@ -450,6 +450,50 @@ Update the setup.py file and pyproject.toml with correct version number and othe
 
 
 
+
+# Version 0.13.0 - Add `slice` function to command's --compute option
+
+Enhance the "update" command's "--compute [formula]" option with the following functions:
+
+- `slice(list, start)`: Slice from the `start` index till the end
+- `slice(list, start, stop)`: Slice from the `start` index till the `stop`
+- `slice(list, start, stop, step)`: Slice from the `start` index till the `stop` interval by `step`
+
+The `slice` function support negative `start`, `stop` and `step`. 
+
+The `slice` function should behave similar to how they are in Python
+
+**Example**:
+
+Given the below front matter
+
+```
+aliases: 
+- /old-alias
+- /newest-alias
+```
+
+
+`update index.md --name aliases --compute "=slice($frontmatter.aliases, -1)"`: formula evaluated to the `slice(list, start=-1)` function taking in a list value from `aliases` front matter and one `start` parameter with -1 value. This function return a new list containing only the last element from the input list --> update the front matter "aliases" to: 
+
+```
+aliases: 
+- /newest-alias
+```
+
+## General requirements
+
+Update or expose correcting library functions to support the above changes in CLI.
+
+Save all dependencies in the requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI. Capture the changelog in the README.md too.
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
+
 # Future versions -- do not execute unless explicitly prompt
 
 
