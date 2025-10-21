@@ -476,6 +476,34 @@ operations = [{'type': 'compute', 'formula': '=concat(/post/, $frontmatter.conte
 results = update_frontmatter(['*.md'], 'short_url', operations, deduplication=False)
 ```
 
+#### `slice(list, start)` *(New in v0.13.0)*
+#### `slice(list, start, stop)` *(New in v0.13.0)*
+#### `slice(list, start, stop, step)` *(New in v0.13.0)*
+Slice a list using Python-like slicing semantics.
+
+**Parameters:**
+- `list`: List to slice (typically a placeholder reference like `$frontmatter.aliases`)
+- `start`: Starting index (can be negative for reverse indexing)
+- `stop`: Stopping index (exclusive, optional)
+- `step`: Step interval (optional, can be negative for reverse iteration)
+
+**Returns:** Sliced list
+
+**Examples:**
+```python
+# Get last element
+operations = [{'type': 'compute', 'formula': '=slice($frontmatter.aliases, -1)'}]
+results = update_frontmatter(['*.md'], 'aliases', operations, deduplication=False)
+
+# Get first three elements
+operations = [{'type': 'compute', 'formula': '=slice($frontmatter.tags, 0, 3)'}]
+results = update_frontmatter(['*.md'], 'top_tags', operations, deduplication=False)
+
+# Get every other element
+operations = [{'type': 'compute', 'formula': '=slice($frontmatter.items, 0, 10, 2)'}]
+results = update_frontmatter(['*.md'], 'filtered_items', operations, deduplication=False)
+```
+
 ### Placeholder References
 
 - `$filename`: Base filename (e.g., "post.md")
@@ -490,7 +518,9 @@ The compute operation has special behavior compared to other update operations:
 
 1. **Field Creation**: If the frontmatter field doesn't exist, it will be created
 2. **Scalar Replacement**: If the field exists and is a scalar value, it will be replaced
-3. **List Append**: If the field exists and is a list, the computed value will be appended
+3. **List Behavior**: If the field exists and is a list:
+   - If the computed value is **not a list**, it will be **appended** to the list
+   - If the computed value **is a list** (e.g., from `slice()`), it will **replace** the entire list *(Updated in v0.13.0)*
 
 **Example:**
 ```python

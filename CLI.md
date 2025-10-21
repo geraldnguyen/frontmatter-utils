@@ -257,6 +257,15 @@ fmu update "index.md" --name aliases --compute "=list()"
 fmu update "index.md" --name content_id --compute "=hash($frontmatter.url, 10)"
 fmu update "index.md" --name aliases --compute "=concat(/post/, $frontmatter.content_id)"
 
+## Slice list to get last element (v0.13.0)
+fmu update "*.md" --name aliases --compute "=slice($frontmatter.aliases, -1)"
+
+## Slice list to get first three elements (v0.13.0)
+fmu update "*.md" --name top_tags --compute "=slice($frontmatter.tags, 0, 3)"
+
+## Slice list with step (every other element) (v0.13.0)
+fmu update "*.md" --name filtered_items --compute "=slice($frontmatter.items, 0, 10, 2)"
+
 # Transform case of values
 fmu update "*.md" --name title --case "Title Case"
 fmu update "*.md" --name author --case lower
@@ -321,11 +330,18 @@ Formulas can be:
 - `list()`: Return an empty list
 - `hash(string, hash_length)`: Create a fixed-length hash of the string parameter
 - `concat(string, ...)`: Concatenate 2 or more string parameters
+- `slice(list, start)`: Slice a list from start index to end *(New in v0.13.0)*
+- `slice(list, start, stop)`: Slice a list from start to stop (exclusive) *(New in v0.13.0)*
+- `slice(list, start, stop, step)`: Slice a list with step interval *(New in v0.13.0)*
+  - Supports negative indices (Python-like behavior)
+  - Example: `slice($frontmatter.aliases, -1)` gets the last element
 
 **Compute Behavior:**
 - If the frontmatter field **does not exist**, it will be **created** with the computed value
 - If the frontmatter field **exists and is a scalar**, it will be **replaced** with the computed value
-- If the frontmatter field **exists and is a list**, the computed value will be **appended** to the list
+- If the frontmatter field **exists and is a list**:
+  - If the computed value is **not a list**, it will be **appended** to the list
+  - If the computed value **is a list** (e.g., from `slice()`), it will **replace** the entire list *(Updated in v0.13.0)*
 
 **Case Transformations:**
 - `upper`: UPPERCASE

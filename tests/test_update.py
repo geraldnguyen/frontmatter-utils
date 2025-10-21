@@ -618,6 +618,181 @@ Content here.""")
         finally:
             if os.path.exists(test_file):
                 os.remove(test_file)
+    
+    # Version 0.13.0 tests: slice function
+    
+    def test_execute_function_slice_start_only(self):
+        """Test executing slice() function with start parameter only."""
+        test_list = ['a', 'b', 'c', 'd', 'e']
+        result = _execute_function('slice', [test_list, '2'])
+        self.assertEqual(result, ['c', 'd', 'e'])
+    
+    def test_execute_function_slice_start_negative(self):
+        """Test executing slice() function with negative start."""
+        test_list = ['a', 'b', 'c', 'd', 'e']
+        result = _execute_function('slice', [test_list, '-2'])
+        self.assertEqual(result, ['d', 'e'])
+    
+    def test_execute_function_slice_start_stop(self):
+        """Test executing slice() function with start and stop parameters."""
+        test_list = ['a', 'b', 'c', 'd', 'e']
+        result = _execute_function('slice', [test_list, '1', '4'])
+        self.assertEqual(result, ['b', 'c', 'd'])
+    
+    def test_execute_function_slice_start_stop_negative(self):
+        """Test executing slice() function with negative stop."""
+        test_list = ['a', 'b', 'c', 'd', 'e']
+        result = _execute_function('slice', [test_list, '0', '-1'])
+        self.assertEqual(result, ['a', 'b', 'c', 'd'])
+    
+    def test_execute_function_slice_start_stop_step(self):
+        """Test executing slice() function with start, stop, and step."""
+        test_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        result = _execute_function('slice', [test_list, '0', '7', '2'])
+        self.assertEqual(result, ['a', 'c', 'e', 'g'])
+    
+    def test_execute_function_slice_negative_step(self):
+        """Test executing slice() function with negative step (reverse)."""
+        test_list = ['a', 'b', 'c', 'd', 'e']
+        result = _execute_function('slice', [test_list, '4', '0', '-1'])
+        self.assertEqual(result, ['e', 'd', 'c', 'b'])
+    
+    def test_execute_function_slice_last_element(self):
+        """Test executing slice() function to get last element (from spec example)."""
+        test_list = ['/old-alias', '/newest-alias']
+        result = _execute_function('slice', [test_list, '-1'])
+        self.assertEqual(result, ['/newest-alias'])
+    
+    def test_execute_function_slice_all_negative_indices(self):
+        """Test executing slice() function with all negative indices."""
+        test_list = ['a', 'b', 'c', 'd', 'e']
+        result = _execute_function('slice', [test_list, '-4', '-1'])
+        self.assertEqual(result, ['b', 'c', 'd'])
+    
+    def test_execute_function_slice_empty_result(self):
+        """Test executing slice() function that results in empty list."""
+        test_list = ['a', 'b', 'c']
+        result = _execute_function('slice', [test_list, '5'])
+        self.assertEqual(result, [])
+    
+    def test_execute_function_slice_invalid_first_param(self):
+        """Test executing slice() function with non-list first parameter."""
+        with self.assertRaises(ValueError) as context:
+            _execute_function('slice', ['not-a-list', '0'])
+        self.assertIn('must be a list', str(context.exception))
+    
+    def test_execute_function_slice_invalid_start(self):
+        """Test executing slice() function with invalid start parameter."""
+        test_list = ['a', 'b', 'c']
+        with self.assertRaises(ValueError) as context:
+            _execute_function('slice', [test_list, 'invalid'])
+        self.assertIn('start parameter must be an integer', str(context.exception))
+    
+    def test_execute_function_slice_insufficient_params(self):
+        """Test executing slice() function with insufficient parameters."""
+        with self.assertRaises(ValueError) as context:
+            _execute_function('slice', [['a', 'b']])
+        self.assertIn('at least 2 parameters', str(context.exception))
+    
+    def test_parse_function_call_slice(self):
+        """Test parsing slice() function call."""
+        func_name, params = _parse_function_call('=slice($frontmatter.aliases, -1)')
+        self.assertEqual(func_name, 'slice')
+        self.assertEqual(len(params), 2)
+        self.assertEqual(params[0], '$frontmatter.aliases')
+        self.assertEqual(params[1], '-1')
+    
+    def test_parse_function_call_slice_with_stop(self):
+        """Test parsing slice() function call with stop parameter."""
+        func_name, params = _parse_function_call('=slice($frontmatter.tags, 0, 3)')
+        self.assertEqual(func_name, 'slice')
+        self.assertEqual(len(params), 3)
+        self.assertEqual(params[0], '$frontmatter.tags')
+        self.assertEqual(params[1], '0')
+        self.assertEqual(params[2], '3')
+    
+    def test_parse_function_call_slice_with_step(self):
+        """Test parsing slice() function call with step parameter."""
+        func_name, params = _parse_function_call('=slice($frontmatter.items, 0, 10, 2)')
+        self.assertEqual(func_name, 'slice')
+        self.assertEqual(len(params), 4)
+        self.assertEqual(params[0], '$frontmatter.items')
+        self.assertEqual(params[1], '0')
+        self.assertEqual(params[2], '10')
+        self.assertEqual(params[3], '2')
+    
+    def test_update_frontmatter_with_compute_function_slice(self):
+        """Test update with compute operation using slice() function (from spec example)."""
+        # Create test file with aliases
+        test_file = os.path.join(self.temp_dir, 'compute_slice_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+aliases:
+  - /old-alias
+  - /newest-alias
+---
+
+Content.""")
+        
+        # Test slice to get last element
+        operations = [{'type': 'compute', 'formula': '=slice($frontmatter.aliases, -1)'}]
+        results = update_frontmatter([test_file], 'aliases', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], ['/newest-alias'])
+    
+    def test_update_frontmatter_with_compute_function_slice_first_three(self):
+        """Test update with compute operation using slice() to get first three elements."""
+        # Create test file with tags
+        test_file = os.path.join(self.temp_dir, 'compute_slice_test2.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+tags:
+  - python
+  - javascript
+  - java
+  - go
+  - rust
+---
+
+Content.""")
+        
+        # Test slice to get first three elements
+        operations = [{'type': 'compute', 'formula': '=slice($frontmatter.tags, 0, 3)'}]
+        results = update_frontmatter([test_file], 'tags', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], ['python', 'javascript', 'java'])
+    
+    def test_update_frontmatter_with_compute_function_slice_every_other(self):
+        """Test update with compute operation using slice() with step."""
+        # Create test file with items
+        test_file = os.path.join(self.temp_dir, 'compute_slice_test3.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+items:
+  - item1
+  - item2
+  - item3
+  - item4
+  - item5
+  - item6
+---
+
+Content.""")
+        
+        # Test slice to get every other element
+        operations = [{'type': 'compute', 'formula': '=slice($frontmatter.items, 0, 6, 2)'}]
+        results = update_frontmatter([test_file], 'items', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], ['item1', 'item3', 'item5'])
 
 
 if __name__ == '__main__':

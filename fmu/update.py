@@ -345,6 +345,48 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
         # Concatenate all parameters
         return ''.join(str(param) for param in parameters)
     
+    elif function_name == 'slice':
+        # Slice a list with Python-like slicing semantics
+        if len(parameters) < 2:
+            raise ValueError("slice() requires at least 2 parameters: list and start")
+        
+        # First parameter should be a list
+        input_list = parameters[0]
+        if not isinstance(input_list, list):
+            raise ValueError("First parameter of slice() must be a list")
+        
+        # Parse slice parameters
+        try:
+            start = int(parameters[1])
+        except (ValueError, TypeError):
+            raise ValueError("start parameter must be an integer")
+        
+        stop = None
+        step = None
+        
+        if len(parameters) >= 3:
+            try:
+                stop = int(parameters[2])
+            except (ValueError, TypeError):
+                raise ValueError("stop parameter must be an integer")
+        
+        if len(parameters) >= 4:
+            try:
+                step = int(parameters[3])
+            except (ValueError, TypeError):
+                raise ValueError("step parameter must be an integer")
+        
+        # Perform the slice operation using Python's slice notation
+        if stop is None and step is None:
+            # slice(list, start)
+            return input_list[start:]
+        elif step is None:
+            # slice(list, start, stop)
+            return input_list[start:stop]
+        else:
+            # slice(list, start, stop, step)
+            return input_list[start:stop:step]
+    
     else:
         raise ValueError(f"Unknown function: {function_name}")
 
@@ -422,8 +464,9 @@ def apply_compute_operation(
     if frontmatter_name in frontmatter:
         current_value = frontmatter[frontmatter_name]
         
-        # If current value is a list, append the computed value
-        if isinstance(current_value, list):
+        # If current value is a list and computed value is NOT a list, append the computed value
+        # But if computed value IS a list, replace the entire list
+        if isinstance(current_value, list) and not isinstance(computed_value, list):
             current_value.append(computed_value)
             frontmatter[frontmatter_name] = current_value
             changes_made = True
