@@ -12,7 +12,8 @@ import sys
 from fmu.update import (
     transform_case, apply_replace_operation, apply_remove_operation,
     apply_case_transformation, deduplicate_array, update_frontmatter,
-    update_and_output
+    update_and_output, evaluate_formula, apply_compute_operation,
+    _resolve_placeholder, _parse_function_call, _execute_function
 )
 from fmu.cli import cmd_update, main
 
@@ -326,6 +327,294 @@ Content here.""")
             self.assertIn("Updated 'tags'", output)
         except SystemExit:
             self.fail("main() raised SystemExit when deduplication should be a valid operation")
+        finally:
+            if os.path.exists(test_file):
+                os.remove(test_file)
+
+    # Version 0.12.0 tests: --compute functionality
+    
+    def test_resolve_placeholder_filename(self):
+        """Test resolving $filename placeholder."""
+        result = _resolve_placeholder('$filename', '/path/to/test.md', {}, '')
+        self.assertEqual(result, 'test.md')
+    
+    def test_resolve_placeholder_filepath(self):
+        """Test resolving $filepath placeholder."""
+        result = _resolve_placeholder('$filepath', '/path/to/test.md', {}, '')
+        self.assertEqual(result, '/path/to/test.md')
+    
+    def test_resolve_placeholder_content(self):
+        """Test resolving $content placeholder."""
+        result = _resolve_placeholder('$content', '/path/to/test.md', {}, 'Test content')
+        self.assertEqual(result, 'Test content')
+    
+    def test_resolve_placeholder_frontmatter_scalar(self):
+        """Test resolving $frontmatter.name placeholder for scalar value."""
+        frontmatter = {'title': 'Test Title'}
+        result = _resolve_placeholder('$frontmatter.title', '/path/to/test.md', frontmatter, '')
+        self.assertEqual(result, 'Test Title')
+    
+    def test_resolve_placeholder_frontmatter_array(self):
+        """Test resolving $frontmatter.name placeholder for array value."""
+        frontmatter = {'tags': ['tag1', 'tag2']}
+        result = _resolve_placeholder('$frontmatter.tags', '/path/to/test.md', frontmatter, '')
+        self.assertEqual(result, ['tag1', 'tag2'])
+    
+    def test_resolve_placeholder_frontmatter_array_index(self):
+        """Test resolving $frontmatter.name[index] placeholder."""
+        frontmatter = {'tags': ['tag1', 'tag2', 'tag3']}
+        result = _resolve_placeholder('$frontmatter.tags[1]', '/path/to/test.md', frontmatter, '')
+        self.assertEqual(result, 'tag2')
+    
+    def test_parse_function_call_now(self):
+        """Test parsing now() function call."""
+        func_name, params = _parse_function_call('=now()')
+        self.assertEqual(func_name, 'now')
+        self.assertEqual(params, [])
+    
+    def test_parse_function_call_list(self):
+        """Test parsing list() function call."""
+        func_name, params = _parse_function_call('=list()')
+        self.assertEqual(func_name, 'list')
+        self.assertEqual(params, [])
+    
+    def test_parse_function_call_hash(self):
+        """Test parsing hash() function call."""
+        func_name, params = _parse_function_call('=hash($frontmatter.url, 10)')
+        self.assertEqual(func_name, 'hash')
+        self.assertEqual(len(params), 2)
+        self.assertEqual(params[0], '$frontmatter.url')
+        self.assertEqual(params[1], '10')
+    
+    def test_parse_function_call_concat(self):
+        """Test parsing concat() function call."""
+        func_name, params = _parse_function_call('=concat(/post/, $frontmatter.id)')
+        self.assertEqual(func_name, 'concat')
+        self.assertEqual(len(params), 2)
+        self.assertEqual(params[0], '/post/')
+        self.assertEqual(params[1], '$frontmatter.id')
+    
+    def test_execute_function_now(self):
+        """Test executing now() function."""
+        result = _execute_function('now', [])
+        # Check format: YYYY-MM-DDTHH:MM:SSZ
+        import re
+        pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$'
+        self.assertIsNotNone(re.match(pattern, result))
+    
+    def test_execute_function_list(self):
+        """Test executing list() function."""
+        result = _execute_function('list', [])
+        self.assertEqual(result, [])
+    
+    def test_execute_function_hash(self):
+        """Test executing hash() function."""
+        result = _execute_function('hash', ['/post/original/a-book-title', 10])
+        self.assertEqual(len(result), 10)
+        # Hash should be deterministic
+        result2 = _execute_function('hash', ['/post/original/a-book-title', 10])
+        self.assertEqual(result, result2)
+    
+    def test_execute_function_concat(self):
+        """Test executing concat() function."""
+        result = _execute_function('concat', ['/post/', 'abc123'])
+        self.assertEqual(result, '/post/abc123')
+    
+    def test_evaluate_formula_literal(self):
+        """Test evaluating literal formula."""
+        result = evaluate_formula('2', '/path/to/test.md', {}, '')
+        self.assertEqual(result, '2')
+        
+        result = evaluate_formula('2nd', '/path/to/test.md', {}, '')
+        self.assertEqual(result, '2nd')
+    
+    def test_evaluate_formula_placeholder(self):
+        """Test evaluating placeholder formula."""
+        frontmatter = {'url': '/original/path'}
+        result = evaluate_formula('$frontmatter.url', '/path/to/test.md', frontmatter, '')
+        self.assertEqual(result, '/original/path')
+    
+    def test_evaluate_formula_function(self):
+        """Test evaluating function formula."""
+        result = evaluate_formula('=list()', '/path/to/test.md', {}, '')
+        self.assertEqual(result, [])
+    
+    def test_evaluate_formula_function_with_placeholder(self):
+        """Test evaluating function formula with placeholder parameters."""
+        frontmatter = {'content_id': 'abc123'}
+        result = evaluate_formula('=concat(/post/, $frontmatter.content_id)', '/path/to/test.md', frontmatter, '')
+        self.assertEqual(result, '/post/abc123')
+    
+    def test_apply_compute_operation_create_field(self):
+        """Test compute operation creating a new field."""
+        frontmatter = {'title': 'Test'}
+        frontmatter, changed = apply_compute_operation(frontmatter, 'edition', '1', '/path/to/test.md', '')
+        
+        self.assertTrue(changed)
+        self.assertEqual(frontmatter['edition'], '1')
+    
+    def test_apply_compute_operation_update_scalar(self):
+        """Test compute operation updating a scalar field."""
+        frontmatter = {'edition': '1'}
+        frontmatter, changed = apply_compute_operation(frontmatter, 'edition', '2', '/path/to/test.md', '')
+        
+        self.assertTrue(changed)
+        self.assertEqual(frontmatter['edition'], '2')
+    
+    def test_apply_compute_operation_append_to_list(self):
+        """Test compute operation appending to a list field."""
+        frontmatter = {'aliases': ['/old-alias', '/newer-alias']}
+        frontmatter, changed = apply_compute_operation(frontmatter, 'aliases', '/newest-alias', '/path/to/test.md', '')
+        
+        self.assertTrue(changed)
+        self.assertEqual(len(frontmatter['aliases']), 3)
+        self.assertIn('/newest-alias', frontmatter['aliases'])
+    
+    def test_update_frontmatter_with_compute_literal(self):
+        """Test update with compute operation using literal value."""
+        # Create test file
+        test_file = os.path.join(self.temp_dir, 'compute_test1.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+---
+
+Content.""")
+        
+        operations = [{'type': 'compute', 'formula': '1'}]
+        results = update_frontmatter([test_file], 'edition', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], '1')
+    
+    def test_update_frontmatter_with_compute_function_now(self):
+        """Test update with compute operation using now() function."""
+        # Create test file
+        test_file = os.path.join(self.temp_dir, 'compute_test2.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+---
+
+Content.""")
+        
+        operations = [{'type': 'compute', 'formula': '=now()'}]
+        results = update_frontmatter([test_file], 'last_update', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        # Check that it's a valid timestamp
+        import re
+        pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$'
+        self.assertIsNotNone(re.match(pattern, results[0]['new_value']))
+    
+    def test_update_frontmatter_with_compute_function_list(self):
+        """Test update with compute operation using list() function."""
+        # Create test file
+        test_file = os.path.join(self.temp_dir, 'compute_test3.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+---
+
+Content.""")
+        
+        operations = [{'type': 'compute', 'formula': '=list()'}]
+        results = update_frontmatter([test_file], 'aliases', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], [])
+    
+    def test_update_frontmatter_with_compute_function_hash(self):
+        """Test update with compute operation using hash() function."""
+        # Create test file
+        test_file = os.path.join(self.temp_dir, 'compute_test4.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+url: /post/original/a-book-title
+---
+
+Content.""")
+        
+        operations = [{'type': 'compute', 'formula': '=hash($frontmatter.url, 10)'}]
+        results = update_frontmatter([test_file], 'content_id', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(len(results[0]['new_value']), 10)
+    
+    def test_update_frontmatter_with_compute_function_concat(self):
+        """Test update with compute operation using concat() function."""
+        # Create test file
+        test_file = os.path.join(self.temp_dir, 'compute_test5.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+content_id: abc123
+aliases: []
+---
+
+Content.""")
+        
+        operations = [{'type': 'compute', 'formula': '=concat(/post/, $frontmatter.content_id)'}]
+        results = update_frontmatter([test_file], 'aliases', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertIn('/post/abc123', results[0]['new_value'])
+    
+    def test_update_frontmatter_with_multiple_compute(self):
+        """Test update with multiple compute operations (Example 3 from spec)."""
+        # Create test file
+        test_file = os.path.join(self.temp_dir, 'compute_test6.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: a book title
+url: /post/original/a-book-title
+---
+
+Content.""")
+        
+        # Step 1: Create empty aliases
+        operations = [{'type': 'compute', 'formula': '=list()'}]
+        results = update_frontmatter([test_file], 'aliases', operations, False)
+        self.assertTrue(results[0]['changes_made'])
+        
+        # Step 2: Create content_id from hash
+        operations = [{'type': 'compute', 'formula': '=hash($frontmatter.url, 10)'}]
+        results = update_frontmatter([test_file], 'content_id', operations, False)
+        self.assertTrue(results[0]['changes_made'])
+        
+        # Step 3: Add alias using concat
+        operations = [{'type': 'compute', 'formula': '=concat(/post/, $frontmatter.content_id)'}]
+        results = update_frontmatter([test_file], 'aliases', operations, False)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(len(results[0]['new_value']), 1)
+    
+    @patch('sys.argv', ['fmu', 'update', '/tmp/compute_cli.md', '--name', 'edition', '--compute', '2'])
+    def test_main_update_with_compute(self):
+        """Test main function with compute operation via CLI."""
+        # Create a temporary test file
+        test_file = '/tmp/compute_cli.md'
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test Document
+edition: 1
+---
+
+Content here.""")
+        
+        try:
+            output = self.capture_output(main)
+            self.assertIn("Updated 'edition'", output)
+            
+            # Verify the file was updated
+            with open(test_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                self.assertIn('edition: \'2\'', content)
         finally:
             if os.path.exists(test_file):
                 os.remove(test_file)

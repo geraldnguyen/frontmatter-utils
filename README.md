@@ -288,6 +288,31 @@ For detailed information about using fmu, see:
 
 ## Changelog
 
+### Version 0.12.0
+
+- **Compute Operations**
+  - New `--compute` option for the update command to calculate and set frontmatter values
+  - Support for literal values, placeholder references, and function calls
+  - Built-in functions: `now()`, `list()`, `hash(string, length)`, `concat(string, ...)`
+  - Placeholder references: `$filename`, `$filepath`, `$content`, `$frontmatter.name`, `$frontmatter.name[index]`
+  - Auto-create frontmatter fields if they don't exist
+  - Automatically append to list fields when computing values
+- **Formula Types**
+  - **Literals**: Set static values like `1`, `2nd`, `any text`
+  - **Placeholders**: Reference file metadata and frontmatter fields
+  - **Functions**: Dynamic value generation with built-in functions
+- **Use Cases**
+  - Generate timestamps with `=now()`
+  - Create content IDs with `=hash($frontmatter.url, 10)`
+  - Build dynamic URLs with `=concat(/post/, $frontmatter.id)`
+  - Initialize empty arrays with `=list()`
+  - Store file metadata in frontmatter
+- **Documentation**
+  - Updated CLI.md with compute examples and function reference
+  - Updated API.md with compute operation specifications
+  - Updated SPECS.md with compute formula examples
+  - All 164 tests passing (28 new tests for compute functionality)
+
 ### Version 0.11.0
 
 - **Documentation Reorganization**

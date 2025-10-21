@@ -144,16 +144,60 @@ commands:
       - "^test.*"
     regex: true
     deduplication: true
+  
+  - command: update
+    description: set edition number
+    patterns:
+      - "index.md"
+    name: edition
+    compute:
+      - "2"
+  
+  - command: update
+    description: update last modified timestamp
+    patterns:
+      - "*.md"
+    name: last_update
+    compute:
+      - "=now()"
+  
+  - command: update
+    description: create content ID from URL
+    patterns:
+      - "*.md"
+    name: content_id
+    compute:
+      - "=hash($frontmatter.url, 10)"
+  
+  - command: update
+    description: build short alias
+    patterns:
+      - "*.md"
+    name: aliases
+    compute:
+      - "=concat(/post/, $frontmatter.content_id)"
 ```
 
 **Options:**
 - `name`: Name of frontmatter field to update (required)
 - `deduplication`: Eliminate exact duplicates in array values (`true` or `false`)
 - `case`: Transform case (`upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`)
+- `compute`: Array of formulas to compute and set field values *(New in v0.12.0)*
 - `replace`: Array of "from to" pairs for value replacement
 - `remove`: Array of values to remove
 - `ignore_case`: Ignore case for replacements and removals (`true` or `false`)
 - `regex`: Treat patterns as regex for replacements and removals (`true` or `false`)
+
+**Compute Formulas (v0.12.0):**
+- Literal values: `"1"`, `"2nd"`, `"any text"`
+- Placeholder references: `"$filename"`, `"$filepath"`, `"$content"`, `"$frontmatter.name"`, `"$frontmatter.name[index]"`
+- Function calls: `"=now()"`, `"=list()"`, `"=hash($frontmatter.url, 10)"`, `"=concat(/post/, $frontmatter.id)"`
+
+**Built-in Functions:**
+- `now()`: Current datetime in ISO 8601 format
+- `list()`: Empty list
+- `hash(string, length)`: Fixed-length hash of string
+- `concat(str1, str2, ...)`: Concatenate strings
 
 ## Usage
 

@@ -212,6 +212,7 @@ Update frontmatter fields in files with various transformations.
 - `--name FIELD`: **Required.** Name of the frontmatter field to update
 
 **Update Operations:**
+- `--compute FORMULA`: **Repeatable.** Compute and set frontmatter value using formula (literal, placeholder, or function call) *(New in v0.12.0)*
 - `--case CASE_TYPE`: Transform case of values. Options: `upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`
 - `--replace FROM TO`: **Repeatable.** Replace values matching FROM with TO
 - `--remove VALUE`: **Repeatable.** Remove values matching VALUE
@@ -226,6 +227,36 @@ Update frontmatter fields in files with various transformations.
 
 **Examples:**
 ```bash
+# Compute operations (v0.12.0)
+
+## Update with literal value
+fmu update "index.md" --name edition --compute 2
+fmu update "index.md" --name edition --compute "2nd"
+
+## Update with current timestamp
+fmu update "*.md" --name last_update --compute "=now()"
+
+## Create empty list
+fmu update "index.md" --name aliases --compute "=list()"
+
+## Append to existing list
+fmu update "index.md" --name aliases --compute "/newest-alias"
+
+## Create hash from frontmatter field
+fmu update "*.md" --name content_id --compute "=hash($frontmatter.url, 10)"
+
+## Concatenate strings
+fmu update "*.md" --name aliases --compute "=concat(/post/, $frontmatter.content_id)"
+
+## Use placeholder references
+fmu update "*.md" --name source_file --compute "$filename"
+fmu update "*.md" --name full_path --compute "$filepath"
+
+## Multiple compute operations (executed in order)
+fmu update "index.md" --name aliases --compute "=list()"
+fmu update "index.md" --name content_id --compute "=hash($frontmatter.url, 10)"
+fmu update "index.md" --name aliases --compute "=concat(/post/, $frontmatter.content_id)"
+
 # Transform case of values
 fmu update "*.md" --name title --case "Title Case"
 fmu update "*.md" --name author --case lower
@@ -273,6 +304,28 @@ fmu update "blog/*.md" \
 # Save command to specs file
 fmu update "*.md" --name title --case "Title Case" --save-specs "title case" specs.yaml
 ```
+
+**Compute Formulas (v0.12.0):**
+Formulas can be:
+- **Literal values**: `1`, `2nd`, `just any text`
+- **Placeholder references**:
+  - `$filename`: Base filename (e.g., "post.md")
+  - `$filepath`: Full file path
+  - `$content`: Content after frontmatter
+  - `$frontmatter.fieldname`: Access frontmatter field (single value or array)
+  - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
+- **Function calls**: `=function_name(param1, param2, ...)`
+
+**Built-in Functions (v0.12.0):**
+- `now()`: Return current datetime in ISO 8601 format (e.g., `2025-10-20T00:30:00Z`)
+- `list()`: Return an empty list
+- `hash(string, hash_length)`: Create a fixed-length hash of the string parameter
+- `concat(string, ...)`: Concatenate 2 or more string parameters
+
+**Compute Behavior:**
+- If the frontmatter field **does not exist**, it will be **created** with the computed value
+- If the frontmatter field **exists and is a scalar**, it will be **replaced** with the computed value
+- If the frontmatter field **exists and is a list**, the computed value will be **appended** to the list
 
 **Case Transformations:**
 - `upper`: UPPERCASE
