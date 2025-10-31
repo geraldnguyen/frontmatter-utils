@@ -424,6 +424,35 @@ Test content for regex arrays.""")
             with self.assertRaises(SystemExit) as cm:
                 main()
             self.assertEqual(cm.exception.code, 1)
+    
+    def test_cmd_validate_returns_nonzero_with_csv_on_failure(self):
+        """Test cmd_validate returns non-zero when validations fail even with CSV output."""
+        validations = [
+            {'type': 'exist', 'field': 'nonexistent_field'}
+        ]
+        
+        csv_file = os.path.join(self.temp_dir, 'validation_failures.csv')
+        exit_code = cmd_validate([self.test_file], validations, csv_file=csv_file)
+        
+        # Exit code should be 1 even when using CSV output
+        self.assertEqual(exit_code, 1)
+        # CSV file should be created with the failure
+        self.assertTrue(os.path.exists(csv_file))
+    
+    def test_cmd_validate_returns_zero_with_csv_on_success(self):
+        """Test cmd_validate returns zero when validations pass with CSV output."""
+        validations = [
+            {'type': 'exist', 'field': 'title'},
+            {'type': 'exist', 'field': 'author'}
+        ]
+        
+        csv_file = os.path.join(self.temp_dir, 'validation_success.csv')
+        exit_code = cmd_validate([self.test_file], validations, csv_file=csv_file)
+        
+        # Exit code should be 0 when all validations pass
+        self.assertEqual(exit_code, 0)
+        # CSV file should be created but with only headers
+        self.assertTrue(os.path.exists(csv_file))
 
 
 if __name__ == '__main__':

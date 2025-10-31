@@ -164,6 +164,7 @@ Validate frontmatter fields against custom rules.
 **Exit Code:** *(New in v0.14.0)*
 - Returns `0` if all validations pass
 - Returns `1` if any validation fails
+- Exit code behavior applies to both console and CSV output modes
 - This enables the validate command to be used in CI/CD pipelines and shell scripts that check exit codes
 
 **Examples:**
@@ -210,6 +211,14 @@ if [ $? -eq 0 ]; then
   echo "All validations passed!"
 else
   echo "Validation failed!"
+  exit 1
+fi
+
+# Export failures to CSV and check exit code (v0.14.0)
+# Exit code is 1 even when using --csv if validations fail
+fmu validate "*.md" --exist title --exist author --csv validation_report.csv
+if [ $? -ne 0 ]; then
+  echo "Validation failed! Check validation_report.csv for details"
   exit 1
 fi
 

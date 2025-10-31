@@ -301,7 +301,7 @@ For detailed information about using fmu, see:
   - `cmd_validate()` function now returns an exit code (0 for success, 1 for failure)
 - **Testing**
   - Added comprehensive unit tests for exit code behavior
-  - All 189 tests passing (7 new tests for exit code functionality)
+  - All 191 tests passing (9 new tests for exit code functionality, including CSV output tests)
 
 ### Version 0.13.0
 
