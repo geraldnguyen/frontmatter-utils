@@ -659,6 +659,65 @@ for cmd in commands:
     print(f"Command: {cmd['command']}, Description: {cmd['description']}")
 ```
 
+### `execute_specs_file(specs_file, skip_confirmation=False)` *(New in v0.6.0, Enhanced in v0.15.0)*
+Execute all commands from a specs file.
+
+**Parameters:**
+- `specs_file` (str): Path to specs file
+- `skip_confirmation` (bool): Whether to skip user confirmation prompts (default: False)
+
+**Returns:**
+- `Tuple[int, Dict[str, Any]]`: Exit code and execution statistics
+  - `exit_code` (int): 0 if all commands succeeded, non-zero if any command failed
+  - `stats` (dict): Dictionary containing execution statistics
+
+**Example:**
+```python
+from fmu.specs import execute_specs_file, print_execution_stats
+
+# Execute with confirmation prompts
+exit_code, stats = execute_specs_file('commands.yaml')
+print_execution_stats(stats)
+
+# Execute without confirmation prompts
+exit_code, stats = execute_specs_file('commands.yaml', skip_confirmation=True)
+if exit_code != 0:
+    print(f"Execution failed with exit code {exit_code}")
+```
+
+**Behavior (v0.15.0):**
+- Commands are executed sequentially
+- If any command returns a non-zero exit code, execution stops immediately and returns that exit code
+- If a command returns 0, execution continues to the next command
+- Enables use in CI/CD pipelines and automation scripts
+
+### `execute_command(command_entry)` *(New in v0.6.0, Enhanced in v0.15.0)*
+Execute a single command from a command dictionary.
+
+**Parameters:**
+- `command_entry` (Dict[str, Any]): Command dictionary with command type, patterns, and options
+
+**Returns:**
+- `int`: Exit code (0 for success, non-zero for failure)
+
+**Example:**
+```python
+from fmu.specs import execute_command
+
+command = {
+    'command': 'validate',
+    'description': 'Check required fields',
+    'patterns': ['*.md'],
+    'exist': ['title', 'author']
+}
+
+exit_code = execute_command(command)
+if exit_code == 0:
+    print("Validation passed")
+else:
+    print(f"Validation failed with exit code {exit_code}")
+```
+
 ## Error Handling
 
 The library handles various error conditions gracefully:

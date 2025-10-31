@@ -279,3 +279,87 @@ commands:
     case: lower
     deduplication: true
 ```
+## Executing Specs Files
+
+Once you have created a specs file with saved commands, you can execute all commands in the file using the `execute` command.
+
+### Basic Usage
+
+```bash
+# Execute with confirmation prompts
+fmu execute specs.yaml
+
+# Execute without confirmation prompts
+fmu execute specs.yaml --yes
+```
+
+### Execution Behavior
+
+**Command Execution:**
+- Commands are executed sequentially in the order they appear in the specs file
+- Before each command, displays the formatted command text
+- Without `--yes`, prompts for confirmation: `Proceed with the above command? Answer yes or no`
+- Each command's output is displayed as it executes
+
+**Exit Code Handling (v0.15.0):**
+- If any command returns a non-zero exit code, execution stops immediately
+- The `execute` command returns the same non-zero exit code from the failed command
+- If all commands succeed (return 0), execution continues through all commands
+- This enables use in CI/CD pipelines and automation scripts
+
+**Execution Statistics:**
+After execution completes (or stops on failure), displays:
+- Number of commands executed
+- Total elapsed time
+- Total execution time (excluding user confirmation waits)
+- Average execution time per command
+- Breakdown by command type (e.g., `read: 1, validate: 2, update: 0`)
+
+### Example
+
+```bash
+# Create a specs file with multiple commands
+fmu validate "posts/*.md" --exist title --exist author --save-specs "validate posts" checks.yaml
+fmu validate "posts/*.md" --not-empty tags --save-specs "validate tags" checks.yaml
+fmu search "posts/*.md" --name status --value draft --csv draft_posts.csv --save-specs "find drafts" checks.yaml
+
+# Execute all commands
+fmu execute checks.yaml --yes
+```
+
+**Output:**
+```
+------------
+fmu validate posts/*.md --exist title --exist author
+------------
+Description: validate posts
+Executing command 1 of 3...
+Command completed successfully in 0.01 seconds.
+
+------------
+fmu validate posts/*.md --not-empty tags
+------------
+Description: validate tags
+Executing command 2 of 3...
+posts/draft-post.md:
+- tags: [] --> Field 'tags' must be an array with at least 1 value
+Command failed with exit code 1.
+Stopping execution due to command failure.
+==================================================
+EXECUTION STATISTICS
+==================================================
+Number of commands executed: 1
+Total elapsed time: 0.02 seconds
+Total execution time: 0.02 seconds
+Average execution time per command: 0.02 seconds
+
+Commands executed by type:
+  read: 0
+  search: 0
+  validate: 1
+  update: 0
+
+Failed commands: 1
+```
+
+The execution stops at the second command because it failed, and the third command is not executed. The exit code is 1, indicating failure.
