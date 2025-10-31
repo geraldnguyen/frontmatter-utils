@@ -407,7 +407,6 @@ Test content for regex arrays.""")
         exit_code = cmd_validate([self.test_file], validations)
         self.assertEqual(exit_code, 1)
     
-    @patch('sys.argv', ['fmu', 'validate', '--exist', 'title', '--exist', 'author'])
     def test_main_validate_success_exits_zero(self):
         """Test main function exits with 0 when all validations pass."""
         # Add pattern argument
@@ -416,7 +415,6 @@ Test content for regex arrays.""")
                 main()
             self.assertEqual(cm.exception.code, 0)
     
-    @patch('sys.argv', ['fmu', 'validate'])
     def test_main_validate_failure_exits_nonzero(self):
         """Test main function exits with non-zero when validations fail."""
         # Add pattern and failing validation
