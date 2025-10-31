@@ -396,6 +396,7 @@ Test content for regex arrays.""")
             {'type': 'exist', 'field': 'title'},
             {'type': 'exist', 'field': 'author'}
         ]
+        
         exit_code = cmd_validate([self.test_file], validations)
         self.assertEqual(exit_code, 0)
     
@@ -404,6 +405,7 @@ Test content for regex arrays.""")
         validations = [
             {'type': 'exist', 'field': 'nonexistent_field'}
         ]
+        
         exit_code = cmd_validate([self.test_file], validations)
         self.assertEqual(exit_code, 1)
     

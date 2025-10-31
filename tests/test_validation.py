@@ -408,6 +408,7 @@ Content here.""")
             {'type': 'exist', 'field': 'title'},
             {'type': 'exist', 'field': 'author'}
         ]
+        
         failure_count = validate_and_output([self.file1], validations)
         self.assertEqual(failure_count, 0)
     
@@ -417,6 +418,7 @@ Content here.""")
             {'type': 'exist', 'field': 'title'},
             {'type': 'exist', 'field': 'nonexistent_field'}
         ]
+        
         failure_count = validate_and_output([self.file1], validations)
         self.assertEqual(failure_count, 1)
     
@@ -426,6 +428,7 @@ Content here.""")
             {'type': 'exist', 'field': 'nonexistent_field1'},
             {'type': 'exist', 'field': 'nonexistent_field2'}
         ]
+        
         failure_count = validate_and_output([self.file1], validations)
         self.assertEqual(failure_count, 2)
 
