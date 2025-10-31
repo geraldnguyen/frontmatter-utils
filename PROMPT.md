@@ -494,6 +494,25 @@ Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instructi
 Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
 
 
+
+# Version 0.14.0 - `validate` command returns non-zero exit code if validation fails
+
+Enhance the `validate` command to return non-zero exit code if any validation fails
+
+## General requirements
+
+Update or expose correcting library functions to support the above changes in CLI.
+
+Save all dependencies in the requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI. Capture the changelog in the README.md too.
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
+
+
 # Future versions -- do not execute unless explicitly prompt
 
 
