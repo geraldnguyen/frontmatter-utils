@@ -402,6 +402,33 @@ Content here.""")
         self.assertEqual(len(failures), 1)
         self.assertIn("is not an array", failures[0][3])
 
+    def test_validate_and_output_returns_failure_count_zero(self):
+        """Test validate_and_output returns 0 when all validations pass."""
+        validations = [
+            {'type': 'exist', 'field': 'title'},
+            {'type': 'exist', 'field': 'author'}
+        ]
+        failure_count = validate_and_output([self.file1], validations)
+        self.assertEqual(failure_count, 0)
+    
+    def test_validate_and_output_returns_failure_count_nonzero(self):
+        """Test validate_and_output returns non-zero count when validations fail."""
+        validations = [
+            {'type': 'exist', 'field': 'title'},
+            {'type': 'exist', 'field': 'nonexistent_field'}
+        ]
+        failure_count = validate_and_output([self.file1], validations)
+        self.assertEqual(failure_count, 1)
+    
+    def test_validate_and_output_returns_multiple_failures(self):
+        """Test validate_and_output returns correct count for multiple failures."""
+        validations = [
+            {'type': 'exist', 'field': 'nonexistent_field1'},
+            {'type': 'exist', 'field': 'nonexistent_field2'}
+        ]
+        failure_count = validate_and_output([self.file1], validations)
+        self.assertEqual(failure_count, 2)
+
 
 if __name__ == '__main__':
     unittest.main()

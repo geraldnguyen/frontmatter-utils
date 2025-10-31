@@ -291,7 +291,7 @@ def validate_and_output(
     ignore_case: bool = False,
     csv_file: Optional[str] = None,
     format_type: str = "yaml"
-) -> None:
+) -> int:
     """
     Validate frontmatter and output results.
     
@@ -301,6 +301,10 @@ def validate_and_output(
         ignore_case: Whether to perform case-insensitive matching
         csv_file: Optional path to CSV file for output
         format_type: The format of the frontmatter
+        
+    Returns:
+        Number of validation failures
     """
     failures = validate_frontmatter(patterns, validations, ignore_case, format_type)
     output_validation_results(failures, csv_file)
+    return len(failures)

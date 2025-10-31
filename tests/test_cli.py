@@ -390,6 +390,41 @@ Test content for regex arrays.""")
             main()
         self.assertEqual(cm.exception.code, 1)
 
+    def test_cmd_validate_returns_zero_on_success(self):
+        """Test cmd_validate returns 0 when all validations pass."""
+        validations = [
+            {'type': 'exist', 'field': 'title'},
+            {'type': 'exist', 'field': 'author'}
+        ]
+        exit_code = cmd_validate([self.test_file], validations)
+        self.assertEqual(exit_code, 0)
+    
+    def test_cmd_validate_returns_nonzero_on_failure(self):
+        """Test cmd_validate returns non-zero when validations fail."""
+        validations = [
+            {'type': 'exist', 'field': 'nonexistent_field'}
+        ]
+        exit_code = cmd_validate([self.test_file], validations)
+        self.assertEqual(exit_code, 1)
+    
+    @patch('sys.argv', ['fmu', 'validate', '--exist', 'title', '--exist', 'author'])
+    def test_main_validate_success_exits_zero(self):
+        """Test main function exits with 0 when all validations pass."""
+        # Add pattern argument
+        with patch('sys.argv', ['fmu', 'validate', self.test_file, '--exist', 'title', '--exist', 'author']):
+            with self.assertRaises(SystemExit) as cm:
+                main()
+            self.assertEqual(cm.exception.code, 0)
+    
+    @patch('sys.argv', ['fmu', 'validate'])
+    def test_main_validate_failure_exits_nonzero(self):
+        """Test main function exits with non-zero when validations fail."""
+        # Add pattern and failing validation
+        with patch('sys.argv', ['fmu', 'validate', self.test_file, '--exist', 'nonexistent_field']):
+            with self.assertRaises(SystemExit) as cm:
+                main()
+            self.assertEqual(cm.exception.code, 1)
+
 
 if __name__ == '__main__':
     unittest.main()
