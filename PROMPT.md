@@ -513,7 +513,23 @@ Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instructi
 
 Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
 
+# Version 0.15.0 - Modify the `execute` command when executing commands from a specs file 
 
+If it executed **any** command (not necessarily `validate`) and the exit code is non-zero, return the same non-zero exit code
+
+If it executed **any** command and the exit code is zero, proceed to the next command, or stop if that is already the last command in the specs file.
+
+## General requirements
+
+Update or expose correcting library functions to support the above changes in CLI.
+
+Save all dependencies in the requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI. Capture the changelog in the README.md too.
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
 
 # Future versions -- do not execute unless explicitly prompt
 
