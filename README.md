@@ -288,6 +288,21 @@ For detailed information about using fmu, see:
 
 ## Changelog
 
+### Version 0.14.0
+
+- **Exit Code for Validation Failures**
+  - The `validate` command now returns a non-zero exit code (1) when any validation fails
+  - Returns exit code 0 when all validations pass
+  - Enables validation to be used in CI/CD pipelines and scripts that check exit codes
+  - Works with all validation types: `--exist`, `--not`, `--eq`, `--ne`, `--contain`, `--not-contain`, `--match`, `--not-match`, `--not-empty`, `--list-size`
+  - Exit code behavior applies to both console and CSV output modes
+- **Library API Updates**
+  - `validate_and_output()` function now returns the count of validation failures (integer)
+  - `cmd_validate()` function now returns an exit code (0 for success, 1 for failure)
+- **Testing**
+  - Added comprehensive unit tests for exit code behavior
+  - All 191 tests passing (9 new tests for exit code functionality, including CSV output tests)
+
 ### Version 0.13.0
 
 - **Slice Function for Compute Operations**

@@ -299,7 +299,7 @@ def cmd_validate(
     format_type: str = "yaml",
     save_specs=None,
     args=None
-):
+) -> int:
     """
     Handle validate command.
     
@@ -311,6 +311,9 @@ def cmd_validate(
         format_type: Format of frontmatter
         save_specs: Tuple of (description, specs_file) for saving specs
         args: Original arguments object for specs conversion
+        
+    Returns:
+        Exit code: 0 if all validations pass, non-zero if any fail
     """
     # Save specs if requested
     if save_specs and args:
@@ -318,9 +321,10 @@ def cmd_validate(
         options = convert_validate_args_to_options(args)
         save_specs_file(specs_file, 'validate', description, patterns, options)
         print(f"Specs saved to {specs_file}")
-        return
+        return 0
     
-    validate_and_output(patterns, validations, ignore_case, csv_file, format_type)
+    failure_count = validate_and_output(patterns, validations, ignore_case, csv_file, format_type)
+    return 1 if failure_count > 0 else 0
 
 
 def cmd_update(
@@ -702,7 +706,7 @@ def main():
         if not validations and not (hasattr(args, 'save_specs') and args.save_specs):
             print("Error: No validation rules specified", file=sys.stderr)
             sys.exit(1)
-        cmd_validate(
+        exit_code = cmd_validate(
             patterns=args.patterns,
             validations=validations,
             ignore_case=args.ignore_case,
@@ -711,6 +715,7 @@ def main():
             save_specs=args.save_specs if hasattr(args, 'save_specs') else None,
             args=args
         )
+        sys.exit(exit_code)
     elif args.command == 'update':
         operations = _parse_update_args(args)
         if not operations and not (hasattr(args, 'save_specs') and args.save_specs):

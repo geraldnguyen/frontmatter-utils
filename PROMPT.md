@@ -499,6 +499,8 @@ Update the setup.py file and pyproject.toml with correct version number and othe
 
 Enhance the `validate` command to return non-zero exit code if any validation fails
 
+This applies even when the result is written into a CSV file using `--csv` option
+
 ## General requirements
 
 Update or expose correcting library functions to support the above changes in CLI.

@@ -46,7 +46,7 @@ This is test content.""")
     def test_cmd_version(self):
         """Test version command."""
         output = self.capture_output(cmd_version)
-        self.assertIn('0.13.0', output)
+        self.assertIn('0.14.0', output)
     
     def test_cmd_help(self):
         """Test help command."""
@@ -254,7 +254,7 @@ Line two""")
     def test_main_version(self):
         """Test main function with version command."""
         output = self.capture_output(main)
-        self.assertIn('0.13.0', output)
+        self.assertIn('0.14.0', output)
     
     @patch('sys.argv', ['fmu', 'help'])
     def test_main_help(self):
@@ -389,6 +389,70 @@ Test content for regex arrays.""")
         with self.assertRaises(SystemExit) as cm:
             main()
         self.assertEqual(cm.exception.code, 1)
+
+    def test_cmd_validate_returns_zero_on_success(self):
+        """Test cmd_validate returns 0 when all validations pass."""
+        validations = [
+            {'type': 'exist', 'field': 'title'},
+            {'type': 'exist', 'field': 'author'}
+        ]
+        
+        exit_code = cmd_validate([self.test_file], validations)
+        self.assertEqual(exit_code, 0)
+    
+    def test_cmd_validate_returns_nonzero_on_failure(self):
+        """Test cmd_validate returns non-zero when validations fail."""
+        validations = [
+            {'type': 'exist', 'field': 'nonexistent_field'}
+        ]
+        
+        exit_code = cmd_validate([self.test_file], validations)
+        self.assertEqual(exit_code, 1)
+    
+    def test_main_validate_success_exits_zero(self):
+        """Test main function exits with 0 when all validations pass."""
+        # Add pattern argument
+        with patch('sys.argv', ['fmu', 'validate', self.test_file, '--exist', 'title', '--exist', 'author']):
+            with self.assertRaises(SystemExit) as cm:
+                main()
+            self.assertEqual(cm.exception.code, 0)
+    
+    def test_main_validate_failure_exits_nonzero(self):
+        """Test main function exits with non-zero when validations fail."""
+        # Add pattern and failing validation
+        with patch('sys.argv', ['fmu', 'validate', self.test_file, '--exist', 'nonexistent_field']):
+            with self.assertRaises(SystemExit) as cm:
+                main()
+            self.assertEqual(cm.exception.code, 1)
+    
+    def test_cmd_validate_returns_nonzero_with_csv_on_failure(self):
+        """Test cmd_validate returns non-zero when validations fail even with CSV output."""
+        validations = [
+            {'type': 'exist', 'field': 'nonexistent_field'}
+        ]
+        
+        csv_file = os.path.join(self.temp_dir, 'validation_failures.csv')
+        exit_code = cmd_validate([self.test_file], validations, csv_file=csv_file)
+        
+        # Exit code should be 1 even when using CSV output
+        self.assertEqual(exit_code, 1)
+        # CSV file should be created with the failure
+        self.assertTrue(os.path.exists(csv_file))
+    
+    def test_cmd_validate_returns_zero_with_csv_on_success(self):
+        """Test cmd_validate returns zero when validations pass with CSV output."""
+        validations = [
+            {'type': 'exist', 'field': 'title'},
+            {'type': 'exist', 'field': 'author'}
+        ]
+        
+        csv_file = os.path.join(self.temp_dir, 'validation_success.csv')
+        exit_code = cmd_validate([self.test_file], validations, csv_file=csv_file)
+        
+        # Exit code should be 0 when all validations pass
+        self.assertEqual(exit_code, 0)
+        # CSV file should be created but with only headers
+        self.assertTrue(os.path.exists(csv_file))
 
 
 if __name__ == '__main__':

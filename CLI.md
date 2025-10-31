@@ -161,6 +161,12 @@ Validate frontmatter fields against custom rules.
 - `--csv FILE`: Optional. Output validation failures to specified CSV file
 - `--save-specs DESCRIPTION FILE`: Save command configuration to specs file *(New in v0.5.0)*
 
+**Exit Code:** *(New in v0.14.0)*
+- Returns `0` if all validations pass
+- Returns `1` if any validation fails
+- Exit code behavior applies to both console and CSV output modes
+- This enables the validate command to be used in CI/CD pipelines and shell scripts that check exit codes
+
 **Examples:**
 ```bash
 # Validate required fields exist
@@ -197,6 +203,24 @@ fmu validate "blog/*.md" \
 
 # Export failures to CSV
 fmu validate "*.md" --exist title --csv validation_report.csv
+
+# Use in CI/CD pipelines (v0.14.0)
+# The command will exit with 1 if validation fails, stopping the pipeline
+fmu validate "content/**/*.md" --exist title --exist date
+if [ $? -eq 0 ]; then
+  echo "All validations passed!"
+else
+  echo "Validation failed!"
+  exit 1
+fi
+
+# Export failures to CSV and check exit code (v0.14.0)
+# Exit code is 1 even when using --csv if validations fail
+fmu validate "*.md" --exist title --exist author --csv validation_report.csv
+if [ $? -ne 0 ]; then
+  echo "Validation failed! Check validation_report.csv for details"
+  exit 1
+fi
 
 # Save command to specs file
 fmu validate "*.md" --exist title --match "title ^.{0,50}$" --save-specs "validate titles" specs.yaml

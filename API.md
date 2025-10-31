@@ -228,6 +228,9 @@ Validate frontmatter and output results directly.
 - `csv_file` (Optional[str]): Path to CSV file for output (default: console output)
 - `format_type` (str): Format type (default: 'yaml')
 
+**Returns:** *(New in v0.14.0)*
+- `int`: Number of validation failures (0 if all validations pass)
+
 **Example:**
 ```python
 from fmu import validate_and_output
@@ -238,7 +241,11 @@ validations = [
 ]
 
 # Validate and print to console
-validate_and_output(['*.md'], validations)
+failure_count = validate_and_output(['*.md'], validations)
+if failure_count > 0:
+    print(f"Validation failed with {failure_count} failures")
+else:
+    print("All validations passed!")
 
 # Validate and export to CSV
 validate_and_output(['*.md'], validations, csv_file='validation_report.csv')
