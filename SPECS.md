@@ -122,6 +122,10 @@ commands:
 - `ignore_case`: Case-insensitive matching (`true` or `false`)
 - `csv`: Output to CSV file (file path)
 
+**Exit Code:** *(New in v0.14.0)*
+- The validate command returns exit code `0` if all validations pass, or `1` if any validation fails
+- This enables validation to be used in CI/CD pipelines and scripts
+
 ### Update Command
 
 Saves configuration for updating frontmatter fields.
