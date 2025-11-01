@@ -467,7 +467,7 @@ def _parse_update_pairs_from_array(array: List[str]) -> List[Tuple[str, str]]:
     return result if result else None
 
 
-def execute_command(command_entry: Dict[str, Any]) -> Tuple[bool, str]:
+def execute_command(command_entry: Dict[str, Any]) -> int:
     """
     Execute a single command from specs.
     
@@ -475,7 +475,7 @@ def execute_command(command_entry: Dict[str, Any]) -> Tuple[bool, str]:
         command_entry: Dictionary containing command information
         
     Returns:
-        Tuple of (success, error_message)
+        Exit code (0 for success, non-zero for failure)
     """
     try:
         from .cli import cmd_read, cmd_search, cmd_validate, cmd_update, _parse_validation_args, _parse_update_args
@@ -493,6 +493,7 @@ def execute_command(command_entry: Dict[str, Any]) -> Tuple[bool, str]:
                 template=args.template,
                 file_output=args.file
             )
+            return 0
         elif command == 'search':
             cmd_search(
                 patterns=args.patterns,
@@ -503,15 +504,17 @@ def execute_command(command_entry: Dict[str, Any]) -> Tuple[bool, str]:
                 csv_file=args.csv_file,
                 format_type=args.format
             )
+            return 0
         elif command == 'validate':
             validations = _parse_validation_args(args)
-            cmd_validate(
+            exit_code = cmd_validate(
                 patterns=args.patterns,
                 validations=validations,
                 ignore_case=args.ignore_case,
                 csv_file=args.csv_file,
                 format_type=args.format
             )
+            return exit_code
         elif command == 'update':
             operations = _parse_update_args(args)
             cmd_update(
@@ -521,18 +524,20 @@ def execute_command(command_entry: Dict[str, Any]) -> Tuple[bool, str]:
                 deduplication=(args.deduplication == 'true'),
                 format_type=args.format
             )
+            return 0
         else:
-            return False, f"Unknown command: {command}"
+            print(f"Unknown command: {command}")
+            return 1
             
-        return True, ""
     except Exception as e:
-        return False, str(e)
+        print(f"Error executing command: {e}")
+        return 1
 
 
 def execute_specs_file(
     specs_file: str, 
     skip_confirmation: bool = False
-) -> Dict[str, Any]:
+) -> Tuple[int, Dict[str, Any]]:
     """
     Execute all commands from a specs file.
     
@@ -541,7 +546,9 @@ def execute_specs_file(
         skip_confirmation: Whether to skip user confirmation for each command
         
     Returns:
-        Dictionary containing execution statistics
+        Tuple of (exit_code, statistics_dict)
+        - exit_code: 0 if all commands succeeded, non-zero if any command failed
+        - statistics_dict: Dictionary containing execution statistics
     """
     # Load specs file
     specs_data = load_specs_file(specs_file)
@@ -555,12 +562,13 @@ def execute_specs_file(
         'command_counts': {'read': 0, 'search': 0, 'validate': 0, 'update': 0},
         'total_elapsed_time': 0,
         'total_execution_time': 0,
-        'average_execution_time': 0
+        'average_execution_time': 0,
+        'exit_code': 0
     }
     
     if not commands:
         print("No commands found in specs file.")
-        return stats
+        return 0, stats
     
     overall_start_time = time.time()
     total_execution_time = 0
@@ -586,20 +594,29 @@ def execute_specs_file(
         print(f"Executing command {i} of {len(commands)}...")
         execution_start_time = time.time()
         
-        success, error_msg = execute_command(command_entry)
+        exit_code = execute_command(command_entry)
         
         execution_end_time = time.time()
         execution_time = execution_end_time - execution_start_time
         total_execution_time += execution_time
         
-        if success:
+        if exit_code == 0:
             stats['executed_commands'] += 1
             if command_name in stats['command_counts']:
                 stats['command_counts'][command_name] += 1
             print(f"Command completed successfully in {execution_time:.2f} seconds.")
         else:
             stats['failed_commands'] += 1
-            print(f"Command failed: {error_msg}")
+            stats['exit_code'] = exit_code
+            print(f"Command failed with exit code {exit_code}.")
+            # Stop execution on non-zero exit code
+            print(f"Stopping execution due to command failure.")
+            overall_end_time = time.time()
+            stats['total_elapsed_time'] = overall_end_time - overall_start_time
+            stats['total_execution_time'] = total_execution_time
+            if stats['executed_commands'] > 0:
+                stats['average_execution_time'] = total_execution_time / stats['executed_commands']
+            return exit_code, stats
         
         print()  # Add spacing between commands
     
@@ -610,7 +627,7 @@ def execute_specs_file(
     if stats['executed_commands'] > 0:
         stats['average_execution_time'] = total_execution_time / stats['executed_commands']
     
-    return stats
+    return 0, stats
 
 
 def print_execution_stats(stats: Dict[str, Any]):

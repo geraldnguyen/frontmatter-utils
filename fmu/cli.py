@@ -359,25 +359,29 @@ def cmd_update(
     update_and_output(patterns, frontmatter_name, operations, deduplication, format_type)
 
 
-def cmd_execute(specs_file: str, skip_confirmation: bool = False):
+def cmd_execute(specs_file: str, skip_confirmation: bool = False) -> int:
     """
     Handle execute command.
     
     Args:
         specs_file: Path to the specs file
         skip_confirmation: Whether to skip user confirmation
+        
+    Returns:
+        Exit code from execution (0 for success, non-zero for failure)
     """
     from .specs import execute_specs_file, print_execution_stats
     
     try:
-        stats = execute_specs_file(specs_file, skip_confirmation)
+        exit_code, stats = execute_specs_file(specs_file, skip_confirmation)
         print_execution_stats(stats)
+        return exit_code
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
     except Exception as e:
         print(f"Error executing specs file: {e}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
 
 def create_parser():
@@ -731,10 +735,11 @@ def main():
             args=args
         )
     elif args.command == 'execute':
-        cmd_execute(
+        exit_code = cmd_execute(
             specs_file=args.specs_file,
             skip_confirmation=args.yes
         )
+        sys.exit(exit_code)
     elif args.command is None:
         # No command provided, show help
         cmd_help()

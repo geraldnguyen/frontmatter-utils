@@ -377,7 +377,7 @@ Formulas can be:
 
 **Note:** Case transformations properly handle contractions (e.g., "can't" → "Can't", not "Can'T") as of v0.8.0.
 
-### `execute SPECS_FILE` *(New in v0.6.0)*
+### `execute SPECS_FILE` *(New in v0.6.0, Enhanced in v0.15.0)*
 Execute all commands stored in a specs file.
 
 **Arguments:**
@@ -399,14 +399,20 @@ fmu execute commands.yaml --yes
 - Commands are executed sequentially in the order they appear in the specs file
 - Before each command, displays: `------------\n[command text]\n------------\n`
 - Without `--yes`, prompts: `Proceed with the above command? Answer yes or no`
-- After all commands complete, displays execution statistics:
+- **Exit Code Handling (v0.15.0):**
+  - If any command returns a non-zero exit code, execution stops immediately
+  - The `execute` command returns that same non-zero exit code
+  - If all commands succeed (return 0), execution continues through all commands
+- After all commands complete (or stop on failure), displays execution statistics:
   - Number of commands executed
   - Total elapsed time
   - Total execution time (excluding user confirmation waits)
   - Average execution time per command
   - Breakdown by command type (e.g., `read: 0, validate: 1, update: 3`)
 
-**Note:** Each command in the specs file can specify its own output destination (console or file via `--file` option), allowing for flexible output workflows.
+**Note:** 
+- Each command in the specs file can specify its own output destination (console or file via `--file` option), allowing for flexible output workflows.
+- Exit codes enable use in CI/CD pipelines and scripts that check for command success/failure.
 
 ## Output Formats
 

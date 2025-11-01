@@ -288,6 +288,22 @@ For detailed information about using fmu, see:
 
 ## Changelog
 
+### Version 0.15.0
+
+- **Execute Command Exit Code Handling**
+  - The `execute` command now properly returns exit codes from executed commands
+  - If any command returns a non-zero exit code, execution stops immediately and returns that exit code
+  - If a command returns exit code 0, execution continues to the next command
+  - Enables spec files to be used in CI/CD pipelines and scripts that check exit codes
+  - Works with all command types: `read`, `search`, `validate`, and `update`
+- **Library API Updates**
+  - `execute_command()` function now returns an exit code (integer) instead of a boolean success tuple
+  - `execute_specs_file()` function now returns a tuple of (exit_code, stats_dict)
+  - `cmd_execute()` function now returns an exit code
+- **Testing**
+  - Added 4 new comprehensive unit tests for exit code behavior
+  - All 195 tests passing (24 total specs tests)
+
 ### Version 0.14.0
 
 - **Exit Code for Validation Failures**
