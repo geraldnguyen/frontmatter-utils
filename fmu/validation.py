@@ -69,11 +69,13 @@ def validate_frontmatter(
                     
         except ValueError as e:
             # YAML parsing error or file encoding error - report as validation failure
-            # Extract a more user-friendly error message
             error_msg = str(e)
-            if "Invalid YAML frontmatter:" in error_msg:
-                error_msg = error_msg.replace("Invalid YAML frontmatter: ", "")
-            failure_reason = f"Invalid YAML frontmatter: {error_msg}"
+            # If the error message already starts with the prefix, use it as-is
+            # Otherwise, add the prefix to make it clear this is a YAML/frontmatter issue
+            if not error_msg.startswith("Invalid YAML frontmatter:"):
+                failure_reason = f"Invalid YAML frontmatter: {error_msg}"
+            else:
+                failure_reason = error_msg
             failures.append((file_path, "frontmatter", None, failure_reason))
         except FileNotFoundError as e:
             # For file not found errors, report as validation failure

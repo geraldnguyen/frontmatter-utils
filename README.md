@@ -309,8 +309,9 @@ For detailed information about using fmu, see:
   - `validate_frontmatter()` now reports YAML parsing errors as validation failures instead of silently skipping files
   - File encoding errors (UnicodeDecodeError) are also reported as validation failures
 - **Testing**
-  - Added 3 comprehensive unit tests for YAML syntax error detection
-  - All 198 tests passing (195 previous tests + 3 new tests for YAML error handling)
+  - Added 6 comprehensive unit tests for various YAML syntax error detection scenarios
+  - Tests cover: incorrect indentation, missing colons, invalid structures, CSV output, and more
+  - All 201 tests passing (195 previous tests + 6 new tests for YAML error handling)
 
 ### Version 0.15.0
 
