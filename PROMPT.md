@@ -531,6 +531,72 @@ Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instructi
 
 Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
 
+
+# Version 0.16.0 - Bugfix
+
+Investigate why the `fmu validate <path> --not-empty themes` failed to detect the syntax error in the below front matter sections. Specifically, the "themes" front matter had a preceeding space that make the whole section invalid.
+
+Once you have identified the root cause and mechanism of the bug, proceed with the fix.
+
+While preparing the fix, remember to meet all instructions specified in the `# General requiremts` section below
+
+```
+---
+title: The Trial by Fire of Neang Seda
+date: 2025-01-19T16:00:00Z
+draft: false
+featured: false
+author: Traditional Khmer
+source: 'Reamker: Phleung Neang Seda'
+reading_time: 9
+genres:
+- Epic
+- Spiritual
+origins: [Cambodia]
+ themes:
+ - Perseverance
+age_groups: [Children, Young Adults, Adults]
+reading_times: [Medium Read]
+tags:
+- reamker
+- trial
+- fire
+- purity
+- divine-test
+- drama
+- divine justice
+- faith
+- truth revealed
+description: Princess Neang Seda faces the ultimate test of fire to prove her 
+  purity and innocence after her rescue from Ravana's captivity.
+url: /stories/cambodia/epic/the-trial-by-fire-of-neang-seda/
+images: [illustration.webp]
+original_title: 'Reamker: Phleung Neang Seda'
+---
+
+Sample content
+
+
+```
+
+
+
+
+
+# General requirements
+
+Update or expose correcting library functions to support the above changes in CLI.
+
+Save all dependencies in the requirements.txt file
+
+Create or update extensive unit tests for both the library mode and CLI modes. 
+
+Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI. Capture the changelog in the README.md too.
+
+Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+
+
+
 # Future versions -- do not execute unless explicitly prompt
 
 
