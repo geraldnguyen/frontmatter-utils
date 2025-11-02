@@ -126,6 +126,11 @@ commands:
 - The validate command returns exit code `0` if all validations pass, or `1` if any validation fails
 - This enables validation to be used in CI/CD pipelines and scripts
 
+**YAML Syntax Error Detection:** *(New in v0.16.0)*
+- Files with malformed YAML frontmatter are now detected and reported as validation failures
+- Previously, files with YAML syntax errors were silently skipped
+- Validation failures due to YAML syntax errors are reported with field name `frontmatter`
+
 ### Update Command
 
 Saves configuration for updating frontmatter fields.

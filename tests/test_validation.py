@@ -431,6 +431,83 @@ Content here.""")
         
         failure_count = validate_and_output([self.file1], validations)
         self.assertEqual(failure_count, 2)
+    
+    def test_validate_with_yaml_syntax_error(self):
+        """Test validation reports YAML syntax errors as validation failures."""
+        # Create a file with malformed YAML frontmatter
+        malformed_file = os.path.join(self.temp_dir, 'malformed.md')
+        with open(malformed_file, 'w') as f:
+            f.write("""---
+title: Valid Title
+origins: [Cambodia]
+ themes:
+ - Perseverance
+---
+
+Content here""")
+        
+        # Try to validate any field
+        validations = [{'type': 'not-empty', 'field': 'themes'}]
+        failures = validate_frontmatter([malformed_file], validations)
+        
+        # Should report the YAML parsing error as a validation failure
+        self.assertEqual(len(failures), 1)
+        self.assertEqual(failures[0][0], malformed_file)
+        self.assertEqual(failures[0][1], "frontmatter")
+        self.assertIsNone(failures[0][2])
+        self.assertIn("Invalid YAML frontmatter", failures[0][3])
+        self.assertIn("expected <block end>", failures[0][3])
+    
+    def test_validate_with_yaml_syntax_error_returns_nonzero(self):
+        """Test validation with YAML syntax error returns non-zero exit code."""
+        # Create a file with malformed YAML frontmatter
+        malformed_file = os.path.join(self.temp_dir, 'malformed2.md')
+        with open(malformed_file, 'w') as f:
+            f.write("""---
+title: Valid Title
+ themes:
+ - Test
+---
+
+Content""")
+        
+        # Validate should return non-zero count
+        validations = [{'type': 'exist', 'field': 'title'}]
+        failure_count = validate_and_output([malformed_file], validations)
+        
+        # Should have at least 1 failure (the YAML error)
+        self.assertGreater(failure_count, 0)
+    
+    def test_validate_with_yaml_syntax_error_csv_output(self):
+        """Test validation with YAML syntax error outputs to CSV correctly."""
+        # Create a file with malformed YAML frontmatter
+        malformed_file = os.path.join(self.temp_dir, 'malformed3.md')
+        with open(malformed_file, 'w') as f:
+            f.write("""---
+title: Test
+ bad_indent: value
+---
+
+Content""")
+        
+        csv_file = os.path.join(self.temp_dir, 'yaml_error_test.csv')
+        validations = [{'type': 'exist', 'field': 'title'}]
+        failure_count = validate_and_output([malformed_file], validations, csv_file=csv_file)
+        
+        # Should report the error
+        self.assertGreater(failure_count, 0)
+        
+        # Check CSV file
+        self.assertTrue(os.path.exists(csv_file))
+        with open(csv_file, 'r') as f:
+            reader = csv.reader(f)
+            rows = list(reader)
+            self.assertGreater(len(rows), 1)  # Header + at least 1 failure row
+            self.assertEqual(rows[0], ['File Path', 'Front Matter Name', 'Front Matter Value', 'Failure Reason'])
+            # Check that the failure row contains the YAML error
+            self.assertEqual(rows[1][0], malformed_file)
+            self.assertEqual(rows[1][1], 'frontmatter')
+            self.assertIn('Invalid YAML frontmatter', rows[1][3])
 
 
 if __name__ == '__main__':

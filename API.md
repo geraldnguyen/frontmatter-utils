@@ -168,6 +168,12 @@ Validate frontmatter fields against custom rules.
 **Returns:**
 - `List[Tuple[str, str, Any, str]]`: List of (file_path, field_name, field_value, failure_reason) for failed validations
 
+**YAML Syntax Error Handling:** *(New in v0.16.0)*
+- Files with malformed YAML frontmatter are now reported as validation failures
+- YAML parsing errors are returned with field_name='frontmatter' and field_value=None
+- The failure_reason includes detailed YAML syntax error information
+- Previously, files with YAML errors were silently skipped
+
 **Validation Rule Format:**
 Each validation rule is a dictionary with the following structure:
 
