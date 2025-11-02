@@ -163,9 +163,19 @@ Validate frontmatter fields against custom rules.
 
 **Exit Code:** *(New in v0.14.0)*
 - Returns `0` if all validations pass
-- Returns `1` if any validation fails
+- Returns `1` if any validation fails (including YAML syntax errors *(v0.16.0)*)
 - Exit code behavior applies to both console and CSV output modes
 - This enables the validate command to be used in CI/CD pipelines and shell scripts that check exit codes
+
+**YAML Syntax Error Detection:** *(New in v0.16.0)*
+- Files with malformed YAML frontmatter are now detected and reported as validation failures
+- Previously, files with YAML syntax errors were silently skipped
+- Error messages include the specific YAML syntax error and line/column location
+- Common issues detected:
+  - Incorrect indentation (e.g., ` themes:` with leading space)
+  - Invalid YAML syntax
+  - Malformed key-value pairs
+- Reported with field name `frontmatter` and detailed error message
 
 **Examples:**
 ```bash

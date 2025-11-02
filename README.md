@@ -294,6 +294,25 @@ For detailed information about using fmu, see:
 
 ## Changelog
 
+### Version 0.16.0
+
+- **YAML Syntax Error Detection (Bugfix)**
+  - The `validate` command now properly detects and reports YAML syntax errors in frontmatter
+  - Previously, files with malformed YAML frontmatter were silently skipped
+  - Now reports detailed YAML parsing errors as validation failures with:
+    - Field name: `frontmatter`
+    - Error message includes the specific YAML syntax error and line/column location
+    - Returns non-zero exit code (1) when YAML syntax errors are detected
+  - Works with both console and CSV output modes
+  - Example: Files with incorrect indentation (e.g., ` themes:` with leading space) are now properly detected
+- **Library API Updates**
+  - `validate_frontmatter()` now reports YAML parsing errors as validation failures instead of silently skipping files
+  - File encoding errors (UnicodeDecodeError) are also reported as validation failures
+- **Testing**
+  - Added 6 comprehensive unit tests for various YAML syntax error detection scenarios
+  - Tests cover: incorrect indentation, missing colons, invalid structures, CSV output, and more
+  - All 201 tests passing (195 previous tests + 6 new tests for YAML error handling)
+
 ### Version 0.15.0
 
 - **Execute Command Exit Code Handling**
