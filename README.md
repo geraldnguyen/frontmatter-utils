@@ -1,3 +1,9 @@
+---
+homepage: https://github.com/geraldnguyen/frontmatter-utils
+package: https://pypi.org/project/frontmatter-utils/
+stats: https://pypistats.org/packages/frontmatter-utils
+---
+
 # fmu - Front Matter Utils
 
 A Python library and CLI tool for parsing and searching front matter in files.
@@ -493,7 +499,3 @@ For detailed information about using fmu, see:
 - CSV export functionality
 - Case-sensitive and case-insensitive search
 - Comprehensive test suite
-
-## Mics
-
-- Download stats: https://pypistats.org/packages/frontmatter-utils
