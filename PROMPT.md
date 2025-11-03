@@ -580,6 +580,13 @@ Sample content
 ```
 
 
+# Version 0.17.0 - Preserving frontmatter order
+
+Update the implementation of the "update" command, so that when it dumps frontmatter back to the file, it should preserve the order of the frontmatters as they were originally loaded.
+
+While `sort_keys=False` can help with this requirement, you are free to explore other approach if they are superior. Add your consideration to the PR description if that is the case.
+
+While preparing the fix, remember to meet all instructions specified in the `# General requiremts` section below
 
 
 
