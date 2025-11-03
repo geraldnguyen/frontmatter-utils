@@ -6,11 +6,10 @@ import unittest
 import tempfile
 import os
 import shutil
-import re
-import yaml
 from io import StringIO
 from unittest.mock import patch
 import sys
+from fmu.core import parse_file
 from fmu.update import (
     transform_case, apply_replace_operation, apply_remove_operation,
     apply_case_transformation, deduplicate_array, update_frontmatter,
@@ -824,16 +823,8 @@ Test content here.""")
         self.assertEqual(len(results), 1)
         self.assertTrue(results[0]['changes_made'])
         
-        # Read the file and check that field order is preserved
-        with open(test_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Extract frontmatter section and parse it
-        match = re.search(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
-        self.assertIsNotNone(match)
-        
-        frontmatter_text = match.group(1)
-        frontmatter_dict = yaml.safe_load(frontmatter_text)
+        # Read the file using the existing parse_file function
+        frontmatter_dict, _ = parse_file(test_file)
         
         # Get the field order from the parsed dictionary (Python 3.7+ maintains insertion order)
         field_order = list(frontmatter_dict.keys())
