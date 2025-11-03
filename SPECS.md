@@ -135,6 +135,8 @@ commands:
 
 Saves configuration for updating frontmatter fields.
 
+**Note:** As of v0.17.0, the update command preserves the original order of frontmatter fields when writing back to files.
+
 ```yaml
 commands:
   - command: update
