@@ -239,6 +239,8 @@ fmu validate "*.md" --exist title --match "title ^.{0,50}$" --save-specs "valida
 ### `update PATTERNS` *(New in v0.4.0)*
 Update frontmatter fields in files with various transformations.
 
+**Note:** As of v0.17.0, the update command preserves the original order of frontmatter fields when writing back to files.
+
 **Arguments:**
 - `PATTERNS`: One or more glob patterns, file paths, or directory paths
 

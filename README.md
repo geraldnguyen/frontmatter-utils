@@ -294,6 +294,19 @@ For detailed information about using fmu, see:
 
 ## Changelog
 
+### Version 0.17.0
+
+- **Frontmatter Order Preservation**
+  - The `update` command now preserves the original order of frontmatter fields when writing back to files
+  - Previously, frontmatter fields were sorted alphabetically after updates
+  - Now maintains the exact order in which fields appeared in the original file
+  - Implementation: Added `sort_keys=False` parameter to all `yaml.dump()` calls in the update functionality
+- **Library API Updates**
+  - `update_frontmatter()` and related functions now preserve field order when modifying frontmatter
+- **Testing**
+  - Added comprehensive unit test `test_frontmatter_order_preservation()` to verify field order is maintained
+  - All 202 tests passing (201 previous tests + 1 new test for order preservation)
+
 ### Version 0.16.0
 
 - **YAML Syntax Error Detection (Bugfix)**

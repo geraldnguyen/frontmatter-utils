@@ -625,15 +625,15 @@ def update_frontmatter(
                             end_pos = original_content.find('\n---\n', 4)
                             if end_pos != -1:
                                 # Reconstruct with updated frontmatter
-                                new_frontmatter = yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True)
+                                new_frontmatter = yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True, sort_keys=False)
                                 new_content = f"---\n{new_frontmatter}---\n{content}"
                             else:
                                 # No closing delimiter found, append to end
-                                new_frontmatter = yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True)
+                                new_frontmatter = yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True, sort_keys=False)
                                 new_content = f"---\n{new_frontmatter}---\n{content}"
                         else:
                             # No frontmatter originally, add it
-                            new_frontmatter = yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True)
+                            new_frontmatter = yaml.dump(frontmatter_data, default_flow_style=False, allow_unicode=True, sort_keys=False)
                             new_content = f"---\n{new_frontmatter}---\n{original_content}"
                     else:
                         # For other formats, this would need additional implementation

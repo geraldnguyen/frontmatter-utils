@@ -9,6 +9,7 @@ import shutil
 from io import StringIO
 from unittest.mock import patch
 import sys
+from fmu.core import parse_file
 from fmu.update import (
     transform_case, apply_replace_operation, apply_remove_operation,
     apply_case_transformation, deduplicate_array, update_frontmatter,
@@ -793,6 +794,45 @@ Content.""")
         self.assertEqual(len(results), 1)
         self.assertTrue(results[0]['changes_made'])
         self.assertEqual(results[0]['new_value'], ['item1', 'item3', 'item5'])
+
+    def test_frontmatter_order_preservation(self):
+        """Test that frontmatter field order is preserved after update."""
+        # Create a test file with specific order of frontmatter fields
+        test_file = os.path.join(self.temp_dir, 'order_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test Document
+date: 2025-01-01
+draft: false
+author: Test Author
+tags:
+- tag1
+- tag2
+categories:
+- cat1
+description: A test description
+---
+
+Test content here.""")
+        
+        # Update the tags field
+        operations = [{'type': 'compute', 'formula': 'tag3'}]
+        results = update_frontmatter([test_file], 'tags', operations, False)
+        
+        # Verify update was successful
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        
+        # Read the file using the existing parse_file function
+        frontmatter_dict, _ = parse_file(test_file)
+        
+        # Get the field order from the parsed dictionary (Python 3.7+ maintains insertion order)
+        field_order = list(frontmatter_dict.keys())
+        
+        # The expected order should be preserved
+        expected_order = ['title', 'date', 'draft', 'author', 'tags', 'categories', 'description']
+        self.assertEqual(field_order, expected_order, 
+                        f"Field order not preserved. Expected {expected_order}, got {field_order}")
 
 
 if __name__ == '__main__':

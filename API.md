@@ -268,6 +268,8 @@ validate_and_output(['*.md'], validations, csv_file='validation_report.csv')
 ### `update_frontmatter(patterns, frontmatter_name, operations, deduplication=True, format_type='yaml')`
 Update frontmatter fields in files with various transformations.
 
+**Note:** As of v0.17.0, this function preserves the original order of frontmatter fields when writing back to files.
+
 **Parameters:**
 - `patterns` (List[str]): Glob patterns or file paths
 - `frontmatter_name` (str): Name of frontmatter field to update
