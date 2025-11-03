@@ -794,6 +794,59 @@ Content.""")
         self.assertTrue(results[0]['changes_made'])
         self.assertEqual(results[0]['new_value'], ['item1', 'item3', 'item5'])
 
+    def test_frontmatter_order_preservation(self):
+        """Test that frontmatter field order is preserved after update."""
+        # Create a test file with specific order of frontmatter fields
+        test_file = os.path.join(self.temp_dir, 'order_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test Document
+date: 2025-01-01
+draft: false
+author: Test Author
+tags:
+- tag1
+- tag2
+categories:
+- cat1
+description: A test description
+---
+
+Test content here.""")
+        
+        # Update the tags field
+        operations = [{'type': 'compute', 'formula': 'tag3'}]
+        results = update_frontmatter([test_file], 'tags', operations, False)
+        
+        # Verify update was successful
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        
+        # Read the file and check that field order is preserved
+        with open(test_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract frontmatter section
+        import re
+        match = re.search(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
+        self.assertIsNotNone(match)
+        
+        frontmatter_text = match.group(1)
+        
+        # Check that fields appear in the original order
+        lines = frontmatter_text.strip().split('\n')
+        # Get just the field names (before the colon)
+        field_order = []
+        for line in lines:
+            if ':' in line and not line.startswith(' ') and not line.startswith('-'):
+                field_name = line.split(':')[0].strip()
+                field_order.append(field_name)
+        
+        # The expected order should be preserved
+        expected_order = ['title', 'date', 'draft', 'author', 'tags', 'categories', 'description']
+        self.assertEqual(field_order, expected_order, 
+                        f"Field order not preserved. Expected {expected_order}, got {field_order}")
+
 
 if __name__ == '__main__':
     unittest.main()
