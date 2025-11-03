@@ -6,6 +6,8 @@ import unittest
 import tempfile
 import os
 import shutil
+import re
+import yaml
 from io import StringIO
 from unittest.mock import patch
 import sys
@@ -826,21 +828,15 @@ Test content here.""")
         with open(test_file, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # Extract frontmatter section
-        import re
+        # Extract frontmatter section and parse it
         match = re.search(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
         self.assertIsNotNone(match)
         
         frontmatter_text = match.group(1)
+        frontmatter_dict = yaml.safe_load(frontmatter_text)
         
-        # Check that fields appear in the original order
-        lines = frontmatter_text.strip().split('\n')
-        # Get just the field names (before the colon)
-        field_order = []
-        for line in lines:
-            if ':' in line and not line.startswith(' ') and not line.startswith('-'):
-                field_name = line.split(':')[0].strip()
-                field_order.append(field_name)
+        # Get the field order from the parsed dictionary (Python 3.7+ maintains insertion order)
+        field_order = list(frontmatter_dict.keys())
         
         # The expected order should be preserved
         expected_order = ['title', 'date', 'draft', 'author', 'tags', 'categories', 'description']
