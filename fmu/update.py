@@ -387,6 +387,32 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
             # slice(list, start, stop, step)
             return input_list[start:stop:step]
     
+    elif function_name == 'coalesce':
+        # Return the first parameter that is not nil, not empty, not blank
+        for param in parameters:
+            # Check if parameter is not None
+            if param is None:
+                continue
+            
+            # Check if parameter is not empty (for strings, lists, etc.)
+            if isinstance(param, str):
+                # Skip unresolved placeholders (they start with $)
+                if param.startswith('$'):
+                    continue
+                # Not blank (contains non-whitespace characters)
+                if param.strip():
+                    return param
+            elif isinstance(param, (list, dict)):
+                # Not empty
+                if param:
+                    return param
+            else:
+                # Other types (numbers, booleans, etc.)
+                return param
+        
+        # If all parameters are nil/empty/blank, return None
+        return None
+    
     else:
         raise ValueError(f"Unknown function: {function_name}")
 
