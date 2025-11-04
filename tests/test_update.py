@@ -941,21 +941,24 @@ title: Test
 
 Content.""")
         
-        # Test coalesce with non-existent frontmatter field (returns placeholder string)
-        # The placeholder is not resolved, so it becomes a string like "$frontmatter.nonexistent"
-        # which is non-empty and will be returned
+        # Test coalesce with non-existent frontmatter field
+        # Non-existent placeholders are returned as strings (e.g., "$frontmatter.nonexistent")
+        # and should be skipped by coalesce in favor of the fallback value
         operations = [{'type': 'compute', 'formula': '=coalesce($frontmatter.nonexistent, "fallback")'}]
         results = update_frontmatter([test_file], 'result', operations, False)
         
         self.assertEqual(len(results), 1)
         self.assertTrue(results[0]['changes_made'])
-        # The non-existent placeholder returns the placeholder itself (string), which is non-empty
-        # So we expect it to be skipped by checking if it starts with "$frontmatter."
-        # But actually, _resolve_placeholder returns the placeholder string if not found
-        # This means coalesce will see a non-empty string, so it returns it
-        # To handle this properly, we need the fallback
-        # Actually, let's check the actual behavior
         self.assertEqual(results[0]['new_value'], 'fallback')
+    
+    def test_execute_function_coalesce_dollar_sign_literal(self):
+        """Test coalesce function does not skip legitimate strings starting with '$'."""
+        # Test that strings like "$100" or "$price" are not skipped
+        result = _execute_function('coalesce', [None, '', '$100'])
+        self.assertEqual(result, '$100')
+        
+        result = _execute_function('coalesce', ['$price', 'fallback'])
+        self.assertEqual(result, '$price')
 
 
 if __name__ == '__main__':

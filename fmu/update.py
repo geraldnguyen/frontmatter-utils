@@ -396,8 +396,8 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
             
             # Check if parameter is not empty (for strings, lists, etc.)
             if isinstance(param, str):
-                # Skip unresolved placeholders (they start with $)
-                if param.startswith('$'):
+                # Skip unresolved placeholders (e.g., "$frontmatter.field", "$filename", "$filepath", "$content")
+                if param.startswith('$frontmatter.') or param in ('$filename', '$filepath', '$content'):
                     continue
                 # Not blank (contains non-whitespace characters)
                 if param.strip():
