@@ -378,7 +378,8 @@ Formulas can be:
   - Supports negative indices (Python-like behavior)
   - Example: `slice($frontmatter.aliases, -1)` gets the last element
 - `coalesce(value1, value2, ...)`: Return the first non-empty, non-blank value *(New in v0.18.0)*
-  - Skips: None/null values, empty strings, whitespace-only strings, empty lists, empty dicts
+  - Skips: None/null values, empty strings, whitespace-only strings, empty lists, empty dicts, unresolved placeholders
+  - Keeps: Numbers (including 0), booleans (including False), non-empty strings/lists/dicts
   - Returns: The first valid value, or None if all values are empty
   - Example: `coalesce($frontmatter.description, $frontmatter.summary, "default")` uses description if not empty, falls back to summary, then to "default"
 
