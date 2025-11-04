@@ -589,6 +589,15 @@ While `sort_keys=False` can help with this requirement, you are free to explore 
 While preparing the fix, remember to meet all instructions specified in the `# General requiremts` section below
 
 
+# Version 0.18.0 - New compute function: coalesce(value, values, ....) 
+
+Update the "update" command to support a new function: `coalesce(value, values, ....)`
+- It supports variable number of parameters
+- and return the first parameter that is not nil, not empty, not blank
+
+
+While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section below
+
 
 # General requirements
 
