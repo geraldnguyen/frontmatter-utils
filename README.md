@@ -294,6 +294,25 @@ For detailed information about using fmu, see:
 
 ## Changelog
 
+### Version 0.18.0
+
+- **New Compute Function: coalesce()**
+  - Added `coalesce(value1, value2, ...)` function for the `update` command's `--compute` option
+  - Returns the first parameter that is not nil (None), not empty, or not blank
+  - Supports variable number of parameters
+  - Useful for providing fallback values when frontmatter fields are missing or empty
+  - Empty strings, whitespace-only strings, empty lists, and empty dictionaries are skipped
+  - Zero (0) and False are considered valid values and not skipped
+  - Unresolved placeholders (starting with $) are also skipped
+  - Example: `fmu update file.md --name result --compute '=coalesce($frontmatter.description, $frontmatter.alt_description, "default")'`
+- **Library API Updates**
+  - Added `coalesce` function to `_execute_function()` in `update.py`
+  - Function signature: Takes a list of parameters and returns the first non-empty value
+- **Testing**
+  - Added 12 comprehensive unit tests for the coalesce function
+  - Tests cover: first non-empty value, skipping empty/None/blank values, numbers, booleans, lists, dicts, and placeholder handling
+  - All 88 tests in test_update.py passing (76 previous tests + 12 new tests)
+
 ### Version 0.17.0
 
 - **Frontmatter Order Preservation**

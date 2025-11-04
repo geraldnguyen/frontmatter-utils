@@ -220,6 +220,7 @@ commands:
 - `slice(list, start)`: Slice list from start to end *(New in v0.13.0)*
 - `slice(list, start, stop)`: Slice list from start to stop (exclusive) *(New in v0.13.0)*
 - `slice(list, start, stop, step)`: Slice list with step interval *(New in v0.13.0)*
+- `coalesce(val1, val2, ...)`: Return first non-empty, non-blank value *(New in v0.18.0)*
 
 ## Usage
 

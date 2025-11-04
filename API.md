@@ -427,7 +427,7 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 **New Features (v0.12.0):**
 - **Compute Operations**: Calculate and set frontmatter values using formulas
 - **Placeholder References**: Access file metadata and other frontmatter fields
-- **Built-in Functions**: now(), list(), hash(), concat() for dynamic value generation
+- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce() for dynamic value generation
 - **Auto-create Fields**: Compute operations can create frontmatter fields that don't exist
 - **List Append**: Automatically append computed values to existing list fields
 
@@ -517,6 +517,39 @@ results = update_frontmatter(['*.md'], 'top_tags', operations, deduplication=Fal
 # Get every other element
 operations = [{'type': 'compute', 'formula': '=slice($frontmatter.items, 0, 10, 2)'}]
 results = update_frontmatter(['*.md'], 'filtered_items', operations, deduplication=False)
+```
+
+#### `coalesce(value1, value2, ...)` *(New in v0.18.0)*
+Return the first parameter that is not nil, not empty, or not blank.
+
+**Parameters:**
+- `value1, value2, ...`: Variable number of values to check (can be placeholder references or literals)
+
+**Returns:** First non-empty, non-blank value, or None if all values are empty
+
+**Skips:**
+- None/null values
+- Empty strings (`""`)
+- Whitespace-only strings (`"   "`)
+- Empty lists (`[]`)
+- Empty dictionaries (`{}`)
+- Unresolved placeholders (starting with `$`)
+
+**Keeps:**
+- Numbers (including 0)
+- Booleans (including False)
+- Non-empty strings
+- Non-empty lists and dicts
+
+**Examples:**
+```python
+# Use description if available, otherwise use summary, then default
+operations = [{'type': 'compute', 'formula': '=coalesce($frontmatter.description, $frontmatter.summary, "No description")'}]
+results = update_frontmatter(['*.md'], 'final_description', operations, deduplication=False)
+
+# Use first available title field
+operations = [{'type': 'compute', 'formula': '=coalesce($frontmatter.short_title, $frontmatter.title, $frontmatter.name)'}]
+results = update_frontmatter(['*.md'], 'display_title', operations, deduplication=False)
 ```
 
 ### Placeholder References
