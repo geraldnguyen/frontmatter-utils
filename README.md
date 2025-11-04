@@ -309,9 +309,9 @@ For detailed information about using fmu, see:
   - Added `coalesce` function to `_execute_function()` in `update.py`
   - Function signature: Takes a list of parameters and returns the first non-empty value
 - **Testing**
-  - Added 12 comprehensive unit tests for the coalesce function
-  - Tests cover: first non-empty value, skipping empty/None/blank values, numbers, booleans, lists, dicts, and placeholder handling
-  - All 88 tests in test_update.py passing (76 previous tests + 12 new tests)
+  - Added 13 comprehensive unit tests for the coalesce function
+  - Tests cover: first non-empty value, skipping empty/None/blank values, numbers, booleans, lists, dicts, placeholder handling, and dollar sign literals
+  - All 89 tests in test_update.py passing (76 previous tests + 13 new tests)
 
 ### Version 0.17.0
 

@@ -14,6 +14,26 @@ from .core import parse_file, get_files_from_patterns
 import yaml
 
 
+# Placeholder patterns that should be skipped by coalesce when unresolved
+UNRESOLVED_PLACEHOLDER_PATTERNS = ['$frontmatter.', '$filename', '$filepath', '$content']
+
+
+def _is_unresolved_placeholder(value: str) -> bool:
+    """
+    Check if a string is an unresolved placeholder.
+    
+    Unresolved placeholders are returned as-is by _resolve_placeholder when
+    they cannot be resolved (e.g., non-existent frontmatter field).
+    
+    Args:
+        value: String to check
+        
+    Returns:
+        True if the string is an unresolved placeholder, False otherwise
+    """
+    return any(value.startswith(pattern) or value == pattern for pattern in UNRESOLVED_PLACEHOLDER_PATTERNS)
+
+
 def transform_case(value: str, case_type: str) -> str:
     """Transform a string to the specified case."""
     if case_type == 'upper':
@@ -396,8 +416,8 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
             
             # Check if parameter is not empty (for strings, lists, etc.)
             if isinstance(param, str):
-                # Skip unresolved placeholders (e.g., "$frontmatter.field", "$filename", "$filepath", "$content")
-                if param.startswith('$frontmatter.') or param in ('$filename', '$filepath', '$content'):
+                # Skip unresolved placeholders
+                if _is_unresolved_placeholder(param):
                     continue
                 # Not blank (contains non-whitespace characters)
                 if param.strip():
