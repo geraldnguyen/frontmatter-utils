@@ -302,6 +302,12 @@ fmu update "*.md" --name top_tags --compute "=slice($frontmatter.tags, 0, 3)"
 ## Slice list with step (every other element) (v0.13.0)
 fmu update "*.md" --name filtered_items --compute "=slice($frontmatter.items, 0, 10, 2)"
 
+## Use coalesce to provide fallback values (v0.18.0)
+fmu update "*.md" --name final_description --compute "=coalesce($frontmatter.description, $frontmatter.summary, 'No description available')"
+
+## Use coalesce with multiple frontmatter fields (v0.18.0)
+fmu update "*.md" --name display_title --compute "=coalesce($frontmatter.short_title, $frontmatter.title, $frontmatter.name)"
+
 # Transform case of values
 fmu update "*.md" --name title --case "Title Case"
 fmu update "*.md" --name author --case lower
@@ -371,6 +377,11 @@ Formulas can be:
 - `slice(list, start, stop, step)`: Slice a list with step interval *(New in v0.13.0)*
   - Supports negative indices (Python-like behavior)
   - Example: `slice($frontmatter.aliases, -1)` gets the last element
+- `coalesce(value1, value2, ...)`: Return the first non-empty, non-blank value *(New in v0.18.0)*
+  - Skips: None/null values, empty strings, whitespace-only strings, empty lists, empty dicts, unresolved placeholders
+  - Keeps: Numbers (including 0), booleans (including False), non-empty strings/lists/dicts
+  - Returns: The first valid value, or None if all values are empty
+  - Example: `coalesce($frontmatter.description, $frontmatter.summary, "default")` uses description if not empty, falls back to summary, then to "default"
 
 **Compute Behavior:**
 - If the frontmatter field **does not exist**, it will be **created** with the computed value

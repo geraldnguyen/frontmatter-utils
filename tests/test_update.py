@@ -833,6 +833,132 @@ Test content here.""")
         expected_order = ['title', 'date', 'draft', 'author', 'tags', 'categories', 'description']
         self.assertEqual(field_order, expected_order, 
                         f"Field order not preserved. Expected {expected_order}, got {field_order}")
+    
+    def test_execute_function_coalesce_first_non_empty(self):
+        """Test coalesce function returns first non-empty value."""
+        # Test with multiple values, first one is non-empty
+        result = _execute_function('coalesce', ['hello', 'world', 'test'])
+        self.assertEqual(result, 'hello')
+    
+    def test_execute_function_coalesce_skip_empty_string(self):
+        """Test coalesce function skips empty strings."""
+        # Test with empty string, blank string, and valid string
+        result = _execute_function('coalesce', ['', '  ', 'valid'])
+        self.assertEqual(result, 'valid')
+    
+    def test_execute_function_coalesce_skip_none(self):
+        """Test coalesce function skips None values."""
+        # Test with None values
+        result = _execute_function('coalesce', [None, None, 'value'])
+        self.assertEqual(result, 'value')
+    
+    def test_execute_function_coalesce_empty_list(self):
+        """Test coalesce function skips empty lists."""
+        # Test with empty list and non-empty list
+        result = _execute_function('coalesce', [[], ['item1']])
+        self.assertEqual(result, ['item1'])
+    
+    def test_execute_function_coalesce_number_zero(self):
+        """Test coalesce function returns number 0 (not skipped)."""
+        # Test that 0 is considered a valid value
+        result = _execute_function('coalesce', [None, '', 0])
+        self.assertEqual(result, 0)
+    
+    def test_execute_function_coalesce_boolean_false(self):
+        """Test coalesce function returns boolean False (not skipped)."""
+        # Test that False is considered a valid value
+        result = _execute_function('coalesce', [None, '', False])
+        self.assertEqual(result, False)
+    
+    def test_execute_function_coalesce_all_empty(self):
+        """Test coalesce function returns None when all values are empty."""
+        # Test with all empty values
+        result = _execute_function('coalesce', [None, '', '  ', []])
+        self.assertIsNone(result)
+    
+    def test_execute_function_coalesce_single_value(self):
+        """Test coalesce function with single valid value."""
+        # Test with single value
+        result = _execute_function('coalesce', ['only_value'])
+        self.assertEqual(result, 'only_value')
+    
+    def test_execute_function_coalesce_non_empty_dict(self):
+        """Test coalesce function with dictionaries."""
+        # Test with empty dict and non-empty dict
+        result = _execute_function('coalesce', [{}, {'key': 'value'}])
+        self.assertEqual(result, {'key': 'value'})
+    
+    def test_update_frontmatter_with_compute_function_coalesce(self):
+        """Test update with compute operation using coalesce() function."""
+        # Create test file with some frontmatter
+        test_file = os.path.join(self.temp_dir, 'compute_coalesce_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+description: ''
+alt_description: 'Valid description'
+---
+
+Content.""")
+        
+        # Test coalesce to get first non-empty value
+        operations = [{'type': 'compute', 'formula': '=coalesce($frontmatter.description, $frontmatter.alt_description, "default")'}]
+        results = update_frontmatter([test_file], 'final_description', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'Valid description')
+    
+    def test_update_frontmatter_with_compute_function_coalesce_with_default(self):
+        """Test update with compute operation using coalesce() with default value."""
+        # Create test file with empty values
+        test_file = os.path.join(self.temp_dir, 'compute_coalesce_default_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+description: ''
+alt_description: ''
+---
+
+Content.""")
+        
+        # Test coalesce falls back to default
+        operations = [{'type': 'compute', 'formula': '=coalesce($frontmatter.description, $frontmatter.alt_description, "default value")'}]
+        results = update_frontmatter([test_file], 'final_description', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'default value')
+    
+    def test_update_frontmatter_with_compute_function_coalesce_placeholder_nonexistent(self):
+        """Test update with compute operation using coalesce() with non-existent placeholder."""
+        # Create test file
+        test_file = os.path.join(self.temp_dir, 'compute_coalesce_nonexistent_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+---
+
+Content.""")
+        
+        # Test coalesce with non-existent frontmatter field
+        # Non-existent placeholders are returned as strings (e.g., "$frontmatter.nonexistent")
+        # and should be skipped by coalesce in favor of the fallback value
+        operations = [{'type': 'compute', 'formula': '=coalesce($frontmatter.nonexistent, "fallback")'}]
+        results = update_frontmatter([test_file], 'result', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'fallback')
+    
+    def test_execute_function_coalesce_dollar_sign_literal(self):
+        """Test coalesce function does not skip legitimate strings starting with '$'."""
+        # Test that strings like "$100" or "$price" are not skipped
+        result = _execute_function('coalesce', [None, '', '$100'])
+        self.assertEqual(result, '$100')
+        
+        result = _execute_function('coalesce', ['$price', 'fallback'])
+        self.assertEqual(result, '$price')
 
 
 if __name__ == '__main__':
