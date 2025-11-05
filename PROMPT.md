@@ -598,8 +598,17 @@ Update the "update" command to support a new function: `coalesce(value, values, 
 
 While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section below
 
+# Version 0.19.0 - Bugfix
+
+- Argument to the "update" command's `--compute` was not captured in the spec file when used in conjunction with the `--save-specs` option
+- The version 0.18.0 was not reflected when enter `fmu version`. Instead 0.17.0 was returned.
+
+While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section below
+
 
 # General requirements
+
+- For every new command, new option introduced or modified or removed, ensure the specs file is updated to support and reflect the changes. For example, the specs must support the new `--compute <value>` option of "update" command, the new validation rules of the "validate" commands etc...`
 
 Update or expose correcting library functions to support the above changes in CLI.
 
@@ -609,7 +618,7 @@ Create or update extensive unit tests for both the library mode and CLI modes.
 
 Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI. Capture the changelog in the README.md too.
 
-Update the setup.py file and pyproject.toml with correct version number and other relevant information if necessary
+Update the __init__.py, setup.py file and pyproject.toml with correct version number and other relevant information to reflec the new version and just implemented changes
 
 
 
