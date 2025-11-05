@@ -522,3 +522,26 @@ Future versions may support:
 - TOML frontmatter
 - JSON frontmatter  
 - INI frontmatter
+
+
+## Troubleshooting
+
+### CI: UnicodeEncodeError on Windows runners
+
+If an `fmu update` or `fmu execute` command fails on CI with an error like:
+
+```
+Error executing command: 'charmap' codec can't encode character '\u0101' in position 47: character maps to <undefined>
+```
+
+This typically means the runner's Python standard streams are using a non-UTF-8 encoding (for example Windows cp1252) and a script tried to print or write characters outside that encoding.
+
+Fix: set Python's IO encoding to UTF-8 in the GitHub Actions job or step by adding:
+
+```yaml
+# add to job or step
+env:
+  PYTHONIOENCODING: utf-8
+```
+
+This ensures stdout/stderr use UTF-8 and prevents UnicodeEncodeError when output contains extended Unicode characters.

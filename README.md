@@ -292,6 +292,28 @@ For detailed information about using fmu, see:
 - **[Library API Reference](API.md)**: Comprehensive Python API documentation
 - **[Specs File Specification](SPECS.md)**: Format and usage of specs files for command automation
 
+## CI / GitHub Actions: UnicodeEncodeError on Windows runners
+
+If you see an error like:
+
+```
+.\stories\spiritual\the-sweeping-monk\index.md: No changes to 'summary' - Field 'summary' does not exist
+Error executing command: 'charmap' codec can't encode character '\u0101' in position 47: character maps to <undefined>
+Command failed with exit code 1.
+```
+
+This is caused by Python attempting to write a character (for example, "ā" U+0101) to stdout/stderr or a file using a platform code page (Windows "charmap" / cp1252) that doesn't support that character. The simplest fix in CI is to force Python to use UTF-8 for its standard streams.
+
+Add the following environment variable to your GitHub Actions job or step to ensure Python uses UTF-8 for IO:
+
+```yaml
+# add to job or step
+env:
+  PYTHONIOENCODING: utf-8
+```
+
+This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when printing non-ASCII characters. It's a recommended CI setting when your content may contain extended Unicode characters.
+
 ## Changelog
 
 ### Version 0.19.0
