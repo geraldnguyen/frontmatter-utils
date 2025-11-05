@@ -294,6 +294,22 @@ For detailed information about using fmu, see:
 
 ## Changelog
 
+### Version 0.19.0
+
+- **Bug Fix: Version Command**
+  - Fixed version command to correctly return 0.19.0 (previously returned 0.17.0 instead of 0.18.0)
+  - Updated `__init__.py` and `setup.py` to version 0.19.0
+- **Bug Fix: --compute Specs Capture**
+  - Fixed issue where `--compute` argument was not captured in spec file when used with `--save-specs` option
+  - Updated `convert_update_args_to_options()` in specs.py to handle `--compute` option
+  - Updated `convert_specs_to_args()` to parse `compute` from specs
+  - Updated `format_command_text()` to output `--compute` in command text
+  - Example: `fmu update file.md --name aliases --compute "=list()" --save-specs "add aliases" specs.yaml` now correctly saves compute operations to specs file
+- **Testing**
+  - Added 3 comprehensive unit tests for compute specs functionality
+  - Tests cover: converting update args with compute, formatting command text with compute, and full save/execute cycle
+  - All 218 tests passing (215 previous tests + 3 new tests)
+
 ### Version 0.18.0
 
 - **New Compute Function: coalesce()**
