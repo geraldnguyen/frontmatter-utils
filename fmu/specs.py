@@ -171,7 +171,6 @@ def convert_update_args_to_options(args) -> Dict[str, Any]:
     if hasattr(args, 'case') and args.case:
         options['case'] = args.case
     
-    # Handle --compute option
     if hasattr(args, 'compute') and args.compute:
         options['compute'] = args.compute
         
@@ -328,7 +327,6 @@ def format_command_text(command_entry: Dict[str, Any]) -> str:
         elif key == 'case':
             parts.append(f"--case {format_value(value)}")
         elif key == 'compute' and isinstance(value, list):
-            # Handle compute formulas (can be multiple)
             for formula in value:
                 parts.append(f"--compute {format_value(formula)}")
         elif key == 'replace' and isinstance(value, list):
