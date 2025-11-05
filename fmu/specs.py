@@ -170,6 +170,9 @@ def convert_update_args_to_options(args) -> Dict[str, Any]:
     
     if hasattr(args, 'case') and args.case:
         options['case'] = args.case
+    
+    if hasattr(args, 'compute') and args.compute:
+        options['compute'] = args.compute
         
     if hasattr(args, 'replace') and args.replace:
         # Fix: Keep --replace arguments as separate items instead of combining them
@@ -323,6 +326,9 @@ def format_command_text(command_entry: Dict[str, Any]) -> str:
                     parts.append(f"--list-size {format_value(field)} {min_val} {max_val}")
         elif key == 'case':
             parts.append(f"--case {format_value(value)}")
+        elif key == 'compute' and isinstance(value, list):
+            for formula in value:
+                parts.append(f"--compute {format_value(formula)}")
         elif key == 'replace' and isinstance(value, list):
             # Handle pairs: [from, to, from, to, ...]
             for i in range(0, len(value), 2):
@@ -391,6 +397,7 @@ def convert_specs_to_args(command_entry: Dict[str, Any]):
         args_dict.update({
             'name': command_entry.get('name', ''),
             'case': command_entry.get('case'),
+            'compute': command_entry.get('compute'),
             'replace': _parse_update_pairs_from_array(command_entry.get('replace', [])),
             'remove': command_entry.get('remove'),
             'deduplication': command_entry.get('deduplication', 'true'),
