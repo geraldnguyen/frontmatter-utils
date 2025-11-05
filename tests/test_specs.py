@@ -194,6 +194,25 @@ class TestSpecsFunctionality(unittest.TestCase):
         
         self.assertEqual(options, expected)
 
+    def test_convert_update_args_to_options_with_compute(self):
+        """Test converting update arguments to options with --compute (version 0.19.0)."""
+        args = type('Args', (), {
+            'name': 'aliases',
+            'compute': ['=list()', '=concat(/post/, $frontmatter.content_id)'],
+            'deduplication': 'true',
+            'ignore_case': False,
+            'regex': False
+        })()
+        
+        options = convert_update_args_to_options(args)
+        
+        expected = {
+            'name': 'aliases',
+            'compute': ['=list()', '=concat(/post/, $frontmatter.content_id)']
+        }
+        
+        self.assertEqual(options, expected)
+
     def capture_output(self, func):
         """Capture output from a function."""
         old_stdout = sys.stdout
@@ -335,6 +354,20 @@ class TestSpecsFunctionality(unittest.TestCase):
         
         result = format_command_text(command_entry)
         expected = 'fmu update *.md --name title --case "Title Case" --replace old new --remove test --regex'
+        self.assertEqual(result, expected)
+
+    def test_format_command_text_update_with_compute(self):
+        """Test formatting update command text with --compute (version 0.19.0)."""
+        command_entry = {
+            'command': 'update',
+            'description': 'test update with compute',
+            'patterns': ['*.md'],
+            'name': 'aliases',
+            'compute': ['=list()', '=concat(/post/, $frontmatter.content_id)']
+        }
+        
+        result = format_command_text(command_entry)
+        expected = 'fmu update *.md --name aliases --compute =list() --compute "=concat(/post/, $frontmatter.content_id)"'
         self.assertEqual(result, expected)
 
     def test_execute_specs_file_empty(self):
@@ -616,6 +649,49 @@ class TestSpecsFunctionality(unittest.TestCase):
         }
         exit_code = execute_command(command_entry)
         self.assertEqual(exit_code, 0)
+
+    def test_update_command_with_compute_save_specs(self):
+        """Test update command with --compute option saves to specs file (version 0.19.0)."""
+        # Create test markdown file
+        test_md = os.path.join(self.test_dir, 'test.md')
+        with open(test_md, 'w') as f:
+            f.write('---\ntitle: Test\nurl: /test\n---\nContent')
+        
+        # Save update command with compute to specs file
+        patterns = [test_md]
+        args = type('Args', (), {
+            'name': 'aliases',
+            'compute': ['=list()', '=concat(/post/, $frontmatter.url)'],
+            'case': None,
+            'replace': None,
+            'remove': None,
+            'deduplication': 'true',
+            'ignore_case': False,
+            'regex': False
+        })()
+        
+        options = convert_update_args_to_options(args)
+        save_specs_file(self.specs_file, 'update', 'test update with compute', patterns, options)
+        
+        # Verify specs file content
+        with open(self.specs_file, 'r') as f:
+            data = yaml.safe_load(f)
+        
+        self.assertEqual(len(data['commands']), 1)
+        self.assertEqual(data['commands'][0]['command'], 'update')
+        self.assertEqual(data['commands'][0]['name'], 'aliases')
+        self.assertEqual(data['commands'][0]['compute'], ['=list()', '=concat(/post/, $frontmatter.url)'])
+        
+        # Verify the command can be executed from specs
+        from fmu.specs import execute_command
+        exit_code = execute_command(data['commands'][0])
+        self.assertEqual(exit_code, 0)
+        
+        # Verify the file was updated correctly
+        with open(test_md, 'r') as f:
+            content = f.read()
+        
+        self.assertIn('aliases:', content)
 
 
 if __name__ == '__main__':
