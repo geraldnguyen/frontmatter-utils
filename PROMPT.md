@@ -605,6 +605,17 @@ While implement the requirements, remember to meet all instructions specified in
 
 While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section below
 
+# Version 0.20.0 - Minor update to `--remove VALUE` option in `update` command
+
+Make "VALUE" optional in `--remove VALUE` option of the `update` command.
+
+If "VALUE" is provided, perform the action as usual.
+
+If "VALUE" is not provided, remove the selected front matter if it exists regardless of its value. If it is an list, remove the whole list and the front matter. If it does not exist, skip the file, do not printout any warning.
+
+
+While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section below
+
 
 # General requirements
 
