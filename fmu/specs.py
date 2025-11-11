@@ -337,7 +337,11 @@ def format_command_text(command_entry: Dict[str, Any]) -> str:
                     parts.append(f"--replace {format_value(from_val)} {format_value(to_val)}")
         elif key == 'remove' and isinstance(value, list):
             for remove_val in value:
-                parts.append(f"--remove {format_value(remove_val)}")
+                # v0.20.0: None means remove entire field (no value argument)
+                if remove_val is None:
+                    parts.append("--remove")
+                else:
+                    parts.append(f"--remove {format_value(remove_val)}")
         elif key == 'deduplication' and value != 'true':
             parts.append(f"--deduplication {value}")
     

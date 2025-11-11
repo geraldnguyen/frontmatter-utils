@@ -157,6 +157,14 @@ commands:
     deduplication: true
   
   - command: update
+    description: remove entire draft field
+    patterns:
+      - "*.md"
+    name: draft
+    remove:
+      - null
+  
+  - command: update
     description: set edition number
     patterns:
       - "index.md"
@@ -203,7 +211,7 @@ commands:
 - `case`: Transform case (`upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`)
 - `compute`: Array of formulas to compute and set field values *(New in v0.12.0)*
 - `replace`: Array of "from to" pairs for value replacement
-- `remove`: Array of values to remove
+- `remove`: Array of values to remove. Use `null` to remove entire field *(Enhanced in v0.20.0)*
 - `ignore_case`: Ignore case for replacements and removals (`true` or `false`)
 - `regex`: Treat patterns as regex for replacements and removals (`true` or `false`)
 

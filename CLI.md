@@ -251,7 +251,7 @@ Update frontmatter fields in files with various transformations.
 - `--compute FORMULA`: **Repeatable.** Compute and set frontmatter value using formula (literal, placeholder, or function call) *(New in v0.12.0)*
 - `--case CASE_TYPE`: Transform case of values. Options: `upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`
 - `--replace FROM TO`: **Repeatable.** Replace values matching FROM with TO
-- `--remove VALUE`: **Repeatable.** Remove values matching VALUE
+- `--remove [VALUE]`: **Repeatable.** Remove values matching VALUE. If VALUE is omitted, removes the entire frontmatter field *(Enhanced in v0.20.0)*
 
 **Shared Operation Options:**
 - `--ignore-case`: Ignore case when performing replacements and removals (default: false)
@@ -326,6 +326,10 @@ fmu update "*.md" --name content --replace "TODO:.*" "DONE" --regex
 # Remove specific values
 fmu update "*.md" --name tags --remove "deprecated"
 fmu update "*.md" --name status --remove "draft"
+
+# Remove entire field (v0.20.0)
+fmu update "*.md" --name draft --remove
+fmu update "*.md" --name temp_field --remove
 
 # Remove with regex patterns
 fmu update "*.md" --name tags --remove "^test.*" --regex

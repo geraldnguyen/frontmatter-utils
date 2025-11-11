@@ -529,7 +529,9 @@ def create_parser():
     update_parser.add_argument(
         '--remove',
         action='append',
-        help='Remove values matching the specified pattern (can be used multiple times)'
+        nargs='?',
+        const=None,
+        help='Remove values matching the specified pattern. If no value provided, removes the entire frontmatter field (can be used multiple times)'
     )
     
     # Shared options for replace and remove operations

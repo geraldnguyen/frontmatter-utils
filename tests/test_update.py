@@ -960,6 +960,66 @@ Content.""")
         result = _execute_function('coalesce', ['$price', 'fallback'])
         self.assertEqual(result, '$price')
 
+    # Version 0.20.0 - Tests for optional VALUE in --remove option
+    
+    def test_apply_remove_operation_without_value_scalar(self):
+        """Test remove operation without value on scalar field (v0.20.0)."""
+        # When remove_val is None, entire field should be removed
+        result = apply_remove_operation("test value", None)
+        self.assertIsNone(result)
+    
+    def test_apply_remove_operation_without_value_list(self):
+        """Test remove operation without value on list field (v0.20.0)."""
+        # When remove_val is None, entire list should be removed
+        result = apply_remove_operation(["item1", "item2", "item3"], None)
+        self.assertIsNone(result)
+    
+    def test_update_frontmatter_remove_entire_scalar_field(self):
+        """Test removing entire scalar field with --remove (no value) (v0.20.0)."""
+        operations = [{'type': 'remove', 'value': None, 'ignore_case': False, 'regex': False}]
+        results = update_frontmatter([self.test_file1], 'status', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertIsNone(results[0]['new_value'])
+        
+        # Verify field was actually removed from file
+        frontmatter_data, _ = parse_file(self.test_file1)
+        self.assertNotIn('status', frontmatter_data)
+    
+    def test_update_frontmatter_remove_entire_list_field(self):
+        """Test removing entire list field with --remove (no value) (v0.20.0)."""
+        operations = [{'type': 'remove', 'value': None, 'ignore_case': False, 'regex': False}]
+        results = update_frontmatter([self.test_file1], 'tags', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertIsNone(results[0]['new_value'])
+        
+        # Verify field was actually removed from file
+        frontmatter_data, _ = parse_file(self.test_file1)
+        self.assertNotIn('tags', frontmatter_data)
+    
+    def test_update_frontmatter_remove_nonexistent_field_silent(self):
+        """Test removing non-existent field with --remove (no value) skips silently (v0.20.0)."""
+        operations = [{'type': 'remove', 'value': None, 'ignore_case': False, 'regex': False}]
+        results = update_frontmatter([self.test_file1], 'nonexistent', operations, False)
+        
+        # Should return empty results (skip silently)
+        self.assertEqual(len(results), 0)
+    
+    def test_update_frontmatter_remove_with_value_still_works(self):
+        """Test that --remove with a value still works as before (v0.20.0)."""
+        operations = [{'type': 'remove', 'value': 'python', 'ignore_case': False, 'regex': False}]
+        results = update_frontmatter([self.test_file1], 'tags', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        # Should have removed 'python' but kept other tags
+        self.assertIn('testing', results[0]['new_value'])
+        self.assertIn('automation', results[0]['new_value'])
+        self.assertNotIn('python', results[0]['new_value'])
+
 
 if __name__ == '__main__':
     unittest.main()

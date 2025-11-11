@@ -133,8 +133,17 @@ def apply_replace_operation(value: Any, from_val: str, to_val: str, ignore_case:
         return value
 
 
-def apply_remove_operation(value: Any, remove_val: str, ignore_case: bool = False, use_regex: bool = False) -> Any:
-    """Apply remove operation to a value or list of values."""
+def apply_remove_operation(value: Any, remove_val: Optional[str], ignore_case: bool = False, use_regex: bool = False) -> Any:
+    """
+    Apply remove operation to a value or list of values.
+    
+    If remove_val is None, the entire field should be removed (return None for any value).
+    If remove_val is provided, only matching values are removed.
+    """
+    # If remove_val is None, we want to remove the entire field
+    if remove_val is None:
+        return None
+    
     if isinstance(value, list):
         result = []
         for item in value:
@@ -567,8 +576,21 @@ def update_frontmatter(
             # Handle compute operations differently - they can create fields
             has_compute_operation = any(op['type'] == 'compute' for op in operations)
             
+            # Check if this is a "remove entire field" operation (remove with value=None)
+            # This can be the only operation, or combined with deduplication
+            non_dedup_operations = [op for op in operations if op['type'] != 'deduplication']
+            is_remove_entire_field = (
+                len(non_dedup_operations) == 1 and 
+                non_dedup_operations[0]['type'] == 'remove' and 
+                non_dedup_operations[0]['value'] is None
+            )
+            
             # Skip if frontmatter field doesn't exist AND no compute operation
             if frontmatter_name not in frontmatter_data and not has_compute_operation:
+                # For "remove entire field" operations on non-existent fields, skip silently
+                if is_remove_entire_field:
+                    continue
+                    
                 results.append({
                     'file_path': file_path,
                     'field': frontmatter_name,
@@ -645,9 +667,9 @@ def update_frontmatter(
             
             # Update frontmatter_data with current_value (except for compute which already updated it)
             if not has_compute_operation or any(op['type'] != 'compute' for op in operations):
-                # Handle removal of scalar fields
-                if current_value is None and not isinstance(original_value, list):
-                    # Remove the field entirely
+                # Handle removal of fields when value becomes None
+                if current_value is None:
+                    # Remove the field entirely (works for both scalar and list values)
                     if frontmatter_name in frontmatter_data:
                         del frontmatter_data[frontmatter_name]
                         changes_made = True
