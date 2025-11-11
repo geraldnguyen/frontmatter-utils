@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="frontmatter-utils",
-    version="0.19.0",
+    version="0.20.0",
     author="Gerald Nguyen The Huy",
     author_email="",
     description="A Python library and CLI tool for parsing and searching front matter in files",
