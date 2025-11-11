@@ -316,6 +316,28 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
 
 ## Changelog
 
+### Version 0.20.0
+
+- **Enhanced --remove Option**
+  - Made VALUE optional in `--remove VALUE` option of the `update` command
+  - When `--remove` is used without a value, it removes the entire frontmatter field (both scalar and list values)
+  - If the field doesn't exist, the file is skipped silently without warnings
+  - Example: `fmu update "*.md" --name draft --remove` removes the entire `draft` field from all matched files
+  - Example: `fmu update "*.md" --name tags --remove` removes the entire `tags` list from all matched files
+- **Backward Compatibility**
+  - `--remove VALUE` with a value still works as before, removing only matching values from fields
+  - Example: `fmu update "*.md" --name tags --remove "deprecated"` removes only "deprecated" from tags array
+- **Specs File Support**
+  - Specs files now support `null` value for remove operations to represent field removal
+  - Example: `remove: [null]` in specs file generates `--remove` without value argument
+- **Library API Updates**
+  - `apply_remove_operation()` now accepts `None` as `remove_val` to indicate entire field removal
+  - Updated `update_frontmatter()` to handle silent skipping of non-existent fields when using field removal
+- **Testing**
+  - Added 6 comprehensive unit tests for the new functionality
+  - Tests cover: scalar field removal, list field removal, non-existent field handling, and backward compatibility
+  - All 224 tests passing (218 previous tests + 6 new tests)
+
 ### Version 0.19.0
 
 - **Bug Fix: Version Command**

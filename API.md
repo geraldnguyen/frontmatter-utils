@@ -296,6 +296,9 @@ Update frontmatter fields in files with various transformations.
 
 # Value removal
 {'type': 'remove', 'value': 'value_to_remove', 'ignore_case': False, 'regex': False}
+
+# Field removal (v0.20.0) - use None as value to remove entire field
+{'type': 'remove', 'value': None, 'ignore_case': False, 'regex': False}
 ```
 
 **Example:**
@@ -388,6 +391,11 @@ operations = [{
     'ignore_case': True
 }]
 results = update_frontmatter(['*.md'], 'tags', operations)
+
+# Remove entire field (v0.20.0)
+operations = [{'type': 'remove', 'value': None, 'ignore_case': False, 'regex': False}]
+results = update_frontmatter(['*.md'], 'draft', operations)
+# This removes the 'draft' field entirely from all matched files
 
 # Deduplication only (v0.8.0)
 results = update_frontmatter(['*.md'], 'categories', [], deduplication=True)
