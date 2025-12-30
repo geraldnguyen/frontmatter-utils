@@ -73,6 +73,9 @@ def convert_read_args_to_options(args) -> Dict[str, Any]:
     
     if hasattr(args, 'file') and args.file:
         options['file'] = args.file
+    
+    if hasattr(args, 'individual') and args.individual:
+        options['individual'] = True
         
     return options
 
@@ -372,7 +375,8 @@ def convert_specs_to_args(command_entry: Dict[str, Any]):
             'skip_heading': command_entry.get('skip_heading', False),
             'escape': command_entry.get('escape', False),
             'template': command_entry.get('template'),
-            'file': command_entry.get('file')
+            'file': command_entry.get('file'),
+            'individual': command_entry.get('individual', False)
         })
     elif command == 'search':
         args_dict.update({
@@ -502,7 +506,8 @@ def execute_command(command_entry: Dict[str, Any]) -> int:
                 format_type=args.format,
                 escape=args.escape,
                 template=args.template,
-                file_output=args.file
+                file_output=args.file,
+                individual=args.individual
             )
             return 0
         elif command == 'search':

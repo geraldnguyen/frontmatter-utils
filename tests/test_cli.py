@@ -46,7 +46,7 @@ This is test content.""")
     def test_cmd_version(self):
         """Test version command."""
         output = self.capture_output(cmd_version)
-        self.assertIn('0.20.0', output)
+        self.assertIn('0.21.0', output)
     
     def test_cmd_help(self):
         """Test help command."""
@@ -254,7 +254,7 @@ Line two""")
     def test_main_version(self):
         """Test main function with version command."""
         output = self.capture_output(main)
-        self.assertIn('0.20.0', output)
+        self.assertIn('0.21.0', output)
     
     @patch('sys.argv', ['fmu', 'help'])
     def test_main_help(self):
@@ -453,6 +453,131 @@ Test content for regex arrays.""")
         self.assertEqual(exit_code, 0)
         # CSV file should be created but with only headers
         self.assertTrue(os.path.exists(csv_file))
+    
+    def test_cmd_read_with_individual_option(self):
+        """Test read command with individual file output option."""
+        # Create a directory structure with multiple markdown files
+        folder1 = os.path.join(self.temp_dir, 'folder1')
+        folder2 = os.path.join(self.temp_dir, 'folder2', 'subfolder')
+        os.makedirs(folder1)
+        os.makedirs(folder2)
+        
+        # Create file1.md in folder1
+        file1 = os.path.join(folder1, 'file1.md')
+        with open(file1, 'w') as f:
+            f.write("""---
+title: File 1
+author: Author 1
+---
+
+Content of file 1.""")
+        
+        # Create file2.md in folder2
+        file2 = os.path.join(folder2, 'file2.md')
+        with open(file2, 'w') as f:
+            f.write("""---
+title: File 2
+author: Author 2
+---
+
+Content of file 2.""")
+        
+        # Run read command with individual option
+        patterns = [file1, file2]
+        cmd_read(patterns, 'both', False, 'yaml', False, None, 'output.txt', True)
+        
+        # Check that individual output files were created
+        output1 = os.path.join(folder1, 'output.txt')
+        output2 = os.path.join(folder2, 'output.txt')
+        
+        self.assertTrue(os.path.exists(output1), f"Output file not created at {output1}")
+        self.assertTrue(os.path.exists(output2), f"Output file not created at {output2}")
+        
+        # Check content of output1
+        with open(output1, 'r') as f:
+            content1 = f.read()
+            self.assertIn('title: File 1', content1)
+            self.assertIn('Content of file 1', content1)
+            self.assertNotIn('title: File 2', content1)
+        
+        # Check content of output2
+        with open(output2, 'r') as f:
+            content2 = f.read()
+            self.assertIn('title: File 2', content2)
+            self.assertIn('Content of file 2', content2)
+            self.assertNotIn('title: File 1', content2)
+    
+    def test_cmd_read_with_individual_and_template(self):
+        """Test read command with individual option and template output."""
+        # Create a directory with a markdown file
+        folder = os.path.join(self.temp_dir, 'test_folder')
+        os.makedirs(folder)
+        
+        file1 = os.path.join(folder, 'test.md')
+        with open(file1, 'w') as f:
+            f.write("""---
+title: Test Title
+tags: [tag1, tag2]
+---
+
+Test content.""")
+        
+        # Run read command with individual option and template
+        template = '{ "title": "$frontmatter.title", "tags": $frontmatter.tags }'
+        cmd_read([file1], 'template', False, 'yaml', False, template, 'output.json', True)
+        
+        # Check that output file was created
+        output = os.path.join(folder, 'output.json')
+        self.assertTrue(os.path.exists(output))
+        
+        # Check content
+        with open(output, 'r') as f:
+            content = f.read()
+            self.assertIn('"title": "Test Title"', content)
+            self.assertIn('"tags": ["tag1", "tag2"]', content)
+    
+    def test_cmd_read_without_individual_creates_single_file(self):
+        """Test read command without individual option creates a single output file."""
+        # Create two files in different directories
+        folder1 = os.path.join(self.temp_dir, 'dir1')
+        folder2 = os.path.join(self.temp_dir, 'dir2')
+        os.makedirs(folder1)
+        os.makedirs(folder2)
+        
+        file1 = os.path.join(folder1, 'test1.md')
+        with open(file1, 'w') as f:
+            f.write("""---
+title: Title 1
+---
+
+Content 1.""")
+        
+        file2 = os.path.join(folder2, 'test2.md')
+        with open(file2, 'w') as f:
+            f.write("""---
+title: Title 2
+---
+
+Content 2.""")
+        
+        # Run read command without individual option
+        output_path = os.path.join(self.temp_dir, 'combined.txt')
+        cmd_read([file1, file2], 'both', False, 'yaml', False, None, output_path, False)
+        
+        # Check that single output file was created
+        self.assertTrue(os.path.exists(output_path))
+        
+        # Check that individual files were NOT created
+        self.assertFalse(os.path.exists(os.path.join(folder1, 'combined.txt')))
+        self.assertFalse(os.path.exists(os.path.join(folder2, 'combined.txt')))
+        
+        # Check that combined file contains both contents
+        with open(output_path, 'r') as f:
+            content = f.read()
+            self.assertIn('title: Title 1', content)
+            self.assertIn('title: Title 2', content)
+            self.assertIn('Content 1', content)
+            self.assertIn('Content 2', content)
 
 
 if __name__ == '__main__':

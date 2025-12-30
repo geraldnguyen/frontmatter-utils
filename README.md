@@ -316,6 +316,30 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
 
 ## Changelog
 
+### Version 0.21.0
+
+- **New --individual Option for read Command**
+  - Added `--individual` option to the `read` command for creating separate output files per input file
+  - When specified with `--file FILE`, the output file is created relative to each input file's directory
+  - Without `--individual`, a single output file is created at the specified path (existing behavior)
+  - Example: `fmu read "content/**/*.md" --file summary.txt --individual` creates `summary.txt` in each input file's directory
+  - Works with all output modes: `frontmatter`, `content`, `both`, and `template`
+- **Specs File Support**
+  - Specs files now support the `individual: true` option for read commands
+  - Execute command correctly handles individual file outputs when processing specs
+- **Library API Updates**
+  - `cmd_read()` function now accepts `individual` parameter
+  - Updated `convert_read_args_to_options()` to handle the individual option
+  - Updated `convert_specs_to_args()` to parse `individual` from specs
+- **Documentation**
+  - Updated CLI.md with `--individual` option details and examples
+  - Updated SPECS.md with `individual` option specification and example
+  - Added changelog entry to README.md
+- **Testing**
+  - Added 3 comprehensive unit tests for the new functionality
+  - Tests cover: individual file creation, template output with individual mode, and single file mode verification
+  - All tests passing
+
 ### Version 0.20.0
 
 - **Enhanced --remove Option**
