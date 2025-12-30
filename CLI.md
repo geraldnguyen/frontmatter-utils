@@ -34,6 +34,7 @@ Parse files and extract frontmatter and/or content.
 - `--escape`: Escape special characters in output (default: false) *(New in v0.9.0)*
 - `--template TEMPLATE`: Template string for output (required when --output is template) *(New in v0.9.0)*
 - `--file FILE`: Save output to file instead of console *(New in v0.10.0)*
+- `--individual`: Create individual output files relative to each input file's folder (requires --file) *(New in v0.21.0)*
 - `--save-specs DESCRIPTION FILE`: Save command configuration to specs file *(New in v0.5.0)*
 
 **Examples:**
@@ -55,6 +56,10 @@ fmu read "*.md" --file output.txt
 
 # Save template output to JSON file (New in v0.10.0)
 fmu read "*.md" --output template --template '{ "title": "$frontmatter.title" }' --file data.json
+
+# Create individual output files for each input file (New in v0.21.0)
+fmu read "content/**/*.md" --file summary.txt --individual
+# This creates summary.txt in each input file's directory
 
 # Show only frontmatter
 fmu read "*.md" --output frontmatter

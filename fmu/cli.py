@@ -3,6 +3,7 @@ Command Line Interface for fmu.
 """
 
 import argparse
+import os
 import sys
 from typing import List, Dict, Any
 from . import __version__
@@ -164,7 +165,7 @@ def cmd_help():
 
 
 def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = False, format_type: str = "yaml", 
-             escape: bool = False, template: str = None, file_output: str = None, save_specs=None):
+             escape: bool = False, template: str = None, file_output: str = None, individual: bool = False, save_specs=None):
     """
     Handle read command.
     
@@ -176,6 +177,7 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
         escape: Whether to escape special characters
         template: Template string for output (required when output='template')
         file_output: File path to save output (if None, output to console)
+        individual: Whether to create individual output files relative to each input file's folder
         save_specs: Tuple of (description, specs_file) for saving specs
     """
     # Validate template requirement
@@ -191,7 +193,8 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
             'skip_heading': skip_heading,
             'escape': escape,
             'template': template,
-            'file': file_output
+            'file': file_output,
+            'individual': individual
         })())
         save_specs_file(specs_file, 'read', description, patterns, options)
         print(f"Specs saved to {specs_file}")
@@ -199,7 +202,12 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
     
     # Determine output destination
     output_file = None
-    if file_output:
+    
+    # If individual mode is enabled, we'll create separate output files for each input file
+    if individual and file_output:
+        # In individual mode, we process each file with its own output file
+        pass  # Will be handled in the loop
+    elif file_output:
         try:
             output_file = open(file_output, 'w', encoding='utf-8')
             output_stream = output_file
@@ -214,6 +222,23 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
         
         for file_path in files:
             try:
+                # Handle individual file output mode
+                if individual and file_output:
+                    # Get the directory of the current file
+                    file_dir = os.path.dirname(os.path.abspath(file_path))
+                    # Create the output path relative to the file's directory
+                    individual_output_path = os.path.join(file_dir, file_output)
+                    
+                    # Create directory if needed
+                    os.makedirs(os.path.dirname(individual_output_path) if os.path.dirname(individual_output_path) else '.', exist_ok=True)
+                    
+                    try:
+                        output_file = open(individual_output_path, 'w', encoding='utf-8')
+                        output_stream = output_file
+                    except IOError as e:
+                        print(f"Error: Cannot open file {individual_output_path}: {e}", file=sys.stderr)
+                        continue
+                
                 frontmatter, content = parse_file(file_path, format_type)
                 
                 # Apply escaping if needed
@@ -227,7 +252,7 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
                     result = _render_template(template, file_path, frontmatter, content)
                     print(result, file=output_stream)
                 else:
-                    if len(files) > 1:
+                    if len(files) > 1 and not individual:
                         print(f"\n=== {file_path} ===", file=output_stream)
                     
                     if output in ['frontmatter', 'both']:
@@ -243,6 +268,11 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
                         if output == 'both' and not skip_heading:
                             print("\nContent:", file=output_stream)
                         print(content.rstrip(), file=output_stream)
+                
+                # Close individual output file after each file
+                if individual and file_output and output_file:
+                    output_file.close()
+                    output_file = None
                     
             except (FileNotFoundError, ValueError, UnicodeDecodeError) as e:
                 print(f"Error processing {file_path}: {e}", file=sys.stderr)
@@ -431,6 +461,11 @@ def create_parser():
     read_parser.add_argument(
         '--file',
         help='Save output to file instead of console'
+    )
+    read_parser.add_argument(
+        '--individual',
+        action='store_true',
+        help='Create individual output files relative to each input file\'s folder (requires --file)'
     )
     read_parser.add_argument(
         '--save-specs',
@@ -694,6 +729,7 @@ def main():
             escape=args.escape if hasattr(args, 'escape') else False,
             template=args.template if hasattr(args, 'template') else None,
             file_output=args.file if hasattr(args, 'file') else None,
+            individual=args.individual if hasattr(args, 'individual') else False,
             save_specs=args.save_specs if hasattr(args, 'save_specs') else None
         )
     elif args.command == 'search':

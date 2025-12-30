@@ -39,6 +39,14 @@ commands:
     template: '{ "title": "$frontmatter.title", "content": "$content" }'
     escape: true
     file: output.json
+  
+  - command: read
+    description: create individual summaries for each file
+    patterns:
+      - "content/**/*.md"
+    output: frontmatter
+    file: summary.txt
+    individual: true
 ```
 
 **Options:**
@@ -47,6 +55,7 @@ commands:
 - `template`: Template string for custom output formatting *(New in v0.9.0)*
 - `escape`: Escape special characters in output (`true` or `false`) *(New in v0.9.0)*
 - `file`: Save output to file instead of console *(New in v0.10.0)*
+- `individual`: Create individual output files relative to each input file's folder (`true` or `false`) *(New in v0.21.0)*
 
 ### Search Command
 
