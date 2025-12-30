@@ -630,6 +630,37 @@ Illustration:
 
 While implement the requirements, remember to meet all instructions specified in the `# General requiremts`
 
+
+# Version 0.22.0 - Provide official support for JSON and YAML output in `read` command
+
+**Add `--output json` and `--output yaml` options**
+
+Existing: `--output [frontmatter|content|both|template]`
+
+To-be: `--output [frontmatter|content|both|template|json|yaml]`
+
+**Add `--map [key] [value] option`**
+
+Build an internal map (or dictionary) of `key` to `value`. The value can be any literal (e.g. string, number, boolean...), or any template placeholder (e.g. `$filepath`, `$frontmatter.fieldname`... - all current or future template placeholders must be supported), or any built-in function (e.g. `now()`, `list()`... - - all current or future template placeholders must be supported)
+
+Can be specified multiple times
+
+When output to file or console, if the `--output [json|yaml]` was specified, serialize the map to json or yaml format.
+
+**Add `--pretty` option**
+
+When output to file or console, if the `--output [json|yaml]` was specified, pretify the json/yaml output
+
+**Add `--compact` option**
+
+When output to file or console, if the `--output [json|yaml]` was specified, minify the json/yaml output
+
+**General requirements**
+
+While implement the requirements, remember to meet all instructions specified in the `# General requiremts`
+
+
+
 # General requirements
 
 - For every new command, new option introduced or modified or removed, ensure the specs file is updated to support and reflect the changes. For example, the specs must support the new `--compute <value>` option of "update" command, the new validation rules of the "validate" commands etc...`
