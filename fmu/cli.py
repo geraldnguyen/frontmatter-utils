@@ -132,6 +132,30 @@ def _render_template(template: str, file_path: str, frontmatter: Dict[str, Any],
     return result
 
 
+def _build_map_from_items(map_items: List[tuple], file_path: str, frontmatter: Dict[str, Any], content: str) -> Dict[str, Any]:
+    """
+    Build a map/dictionary from map items by evaluating each value.
+    
+    Args:
+        map_items: List of (key, value) tuples
+        file_path: Full path to the file
+        frontmatter: Frontmatter dictionary
+        content: Content string
+        
+    Returns:
+        Dictionary with evaluated values
+    """
+    from .update import evaluate_formula
+    
+    result_map = {}
+    for key, value in map_items:
+        # Evaluate the value using the same logic as compute operations
+        evaluated_value = evaluate_formula(value, file_path, frontmatter, content)
+        result_map[key] = evaluated_value
+    
+    return result_map
+
+
 def cmd_version():
     """Handle version command."""
     print(__version__)
@@ -165,24 +189,38 @@ def cmd_help():
 
 
 def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = False, format_type: str = "yaml", 
-             escape: bool = False, template: str = None, file_output: str = None, individual: bool = False, save_specs=None):
+             escape: bool = False, template: str = None, file_output: str = None, individual: bool = False, 
+             map_items: List[tuple] = None, pretty: bool = False, compact: bool = False, save_specs=None):
     """
     Handle read command.
     
     Args:
         patterns: List of glob patterns or file paths
-        output: What to output ('frontmatter', 'content', 'both', 'template')
+        output: What to output ('frontmatter', 'content', 'both', 'template', 'json', 'yaml')
         skip_heading: Whether to skip section headings
         format_type: Format of frontmatter
         escape: Whether to escape special characters
         template: Template string for output (required when output='template')
         file_output: File path to save output (if None, output to console)
         individual: Whether to create individual output files relative to each input file's folder
+        map_items: List of (key, value) tuples for building JSON/YAML output
+        pretty: Whether to prettify JSON/YAML output
+        compact: Whether to minify JSON/YAML output
         save_specs: Tuple of (description, specs_file) for saving specs
     """
     # Validate template requirement
     if output == 'template' and not template:
         print("Error: --template is required when --output is 'template'", file=sys.stderr)
+        sys.exit(1)
+    
+    # Validate map requirement for JSON/YAML output
+    if output in ['json', 'yaml'] and not map_items:
+        print("Error: --map is required when --output is 'json' or 'yaml'", file=sys.stderr)
+        sys.exit(1)
+    
+    # Pretty and compact are mutually exclusive
+    if pretty and compact:
+        print("Error: --pretty and --compact cannot be used together", file=sys.stderr)
         sys.exit(1)
     
     # Save specs if requested
@@ -194,7 +232,10 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
             'escape': escape,
             'template': template,
             'file': file_output,
-            'individual': individual
+            'individual': individual,
+            'map': map_items,
+            'pretty': pretty,
+            'compact': compact
         })())
         save_specs_file(specs_file, 'read', description, patterns, options)
         print(f"Specs saved to {specs_file}")
@@ -251,6 +292,28 @@ def cmd_read(patterns: List[str], output: str = "both", skip_heading: bool = Fal
                     # Render template
                     result = _render_template(template, file_path, frontmatter, content)
                     print(result, file=output_stream)
+                elif output in ['json', 'yaml']:
+                    # Build map and serialize to JSON/YAML
+                    result_map = _build_map_from_items(map_items, file_path, frontmatter, content)
+                    
+                    if output == 'json':
+                        import json
+                        if pretty:
+                            json_output = json.dumps(result_map, indent=2, ensure_ascii=False)
+                        elif compact:
+                            json_output = json.dumps(result_map, separators=(',', ':'), ensure_ascii=False)
+                        else:
+                            json_output = json.dumps(result_map, ensure_ascii=False)
+                        print(json_output, file=output_stream)
+                    else:  # yaml
+                        import yaml
+                        if pretty:
+                            yaml_output = yaml.dump(result_map, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                        elif compact:
+                            yaml_output = yaml.dump(result_map, default_flow_style=True, allow_unicode=True)
+                        else:
+                            yaml_output = yaml.dump(result_map, allow_unicode=True, sort_keys=False)
+                        print(yaml_output.rstrip(), file=output_stream)
                 else:
                     if len(files) > 1 and not individual:
                         print(f"\n=== {file_path} ===", file=output_stream)
@@ -440,7 +503,7 @@ def create_parser():
     read_parser.add_argument('patterns', nargs='+', help='Glob patterns or file paths')
     read_parser.add_argument(
         '--output',
-        choices=['frontmatter', 'content', 'both', 'template'],
+        choices=['frontmatter', 'content', 'both', 'template', 'json', 'yaml'],
         default='both',
         help='What to output (default: both)'
     )
@@ -466,6 +529,23 @@ def create_parser():
         '--individual',
         action='store_true',
         help='Create individual output files relative to each input file\'s folder (requires --file)'
+    )
+    read_parser.add_argument(
+        '--map',
+        action='append',
+        nargs=2,
+        metavar=('KEY', 'VALUE'),
+        help='Build a key-value map for JSON/YAML output. VALUE can be literals, placeholders ($filepath, $frontmatter.name), or functions (=now(), =list()). Can be used multiple times.'
+    )
+    read_parser.add_argument(
+        '--pretty',
+        action='store_true',
+        help='Prettify JSON/YAML output (only applies with --output json or yaml)'
+    )
+    read_parser.add_argument(
+        '--compact',
+        action='store_true',
+        help='Minify JSON/YAML output (only applies with --output json or yaml)'
     )
     read_parser.add_argument(
         '--save-specs',
@@ -730,6 +810,9 @@ def main():
             template=args.template if hasattr(args, 'template') else None,
             file_output=args.file if hasattr(args, 'file') else None,
             individual=args.individual if hasattr(args, 'individual') else False,
+            map_items=args.map if hasattr(args, 'map') and args.map else None,
+            pretty=args.pretty if hasattr(args, 'pretty') else False,
+            compact=args.compact if hasattr(args, 'compact') else False,
             save_specs=args.save_specs if hasattr(args, 'save_specs') else None
         )
     elif args.command == 'search':
