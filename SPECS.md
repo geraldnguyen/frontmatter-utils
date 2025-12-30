@@ -47,15 +47,44 @@ commands:
     output: frontmatter
     file: summary.txt
     individual: true
+  
+  - command: read
+    description: export as JSON
+    patterns:
+      - "*.md"
+    output: json
+    map:
+      - [title, '$frontmatter.title']
+      - [author, '$frontmatter.author']
+      - [path, '$filepath']
+      - [timestamp, '=now()']
+    pretty: true
+    file: data.json
+  
+  - command: read
+    description: export as compact YAML
+    patterns:
+      - "*.md"
+    output: yaml
+    map:
+      - [title, '$frontmatter.title']
+      - [tags, '$frontmatter.tags']
+      - [id, '=hash($filepath, 10)']
+    compact: true
 ```
 
 **Options:**
-- `output`: What to output (`frontmatter`, `content`, `both`, or `template`) *(template added in v0.9.0)*
+- `output`: What to output (`frontmatter`, `content`, `both`, `template`, `json`, or `yaml`) *(json/yaml added in v0.22.0)*
 - `skip_heading`: Whether to skip section headings (`true` or `false`)
 - `template`: Template string for custom output formatting *(New in v0.9.0)*
 - `escape`: Escape special characters in output (`true` or `false`) *(New in v0.9.0)*
 - `file`: Save output to file instead of console *(New in v0.10.0)*
 - `individual`: Create individual output files relative to each input file's folder (`true` or `false`) *(New in v0.21.0)*
+- `map`: Array of key-value pairs for JSON/YAML output (required when output is `json` or `yaml`) *(New in v0.22.0)*
+  - Each item is a 2-element array: `[key, value]`
+  - Values can be literals, placeholders, or functions
+- `pretty`: Prettify JSON/YAML output (`true` or `false`) *(New in v0.22.0)*
+- `compact`: Minify JSON/YAML output (`true` or `false`) *(New in v0.22.0)*
 
 ### Search Command
 

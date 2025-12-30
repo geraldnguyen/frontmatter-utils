@@ -146,12 +146,25 @@ def _build_map_from_items(map_items: List[tuple], file_path: str, frontmatter: D
         Dictionary with evaluated values
     """
     from .update import evaluate_formula
+    import datetime
+    
+    def _convert_to_json_serializable(obj):
+        """Convert non-JSON-serializable types to JSON-serializable equivalents."""
+        if isinstance(obj, (datetime.date, datetime.datetime)):
+            return obj.isoformat()
+        elif isinstance(obj, list):
+            return [_convert_to_json_serializable(item) for item in obj]
+        elif isinstance(obj, dict):
+            return {key: _convert_to_json_serializable(val) for key, val in obj.items()}
+        else:
+            return obj
     
     result_map = {}
     for key, value in map_items:
         # Evaluate the value using the same logic as compute operations
         evaluated_value = evaluate_formula(value, file_path, frontmatter, content)
-        result_map[key] = evaluated_value
+        # Convert to JSON-serializable format
+        result_map[key] = _convert_to_json_serializable(evaluated_value)
     
     return result_map
 

@@ -29,12 +29,15 @@ Parse files and extract frontmatter and/or content.
 - `PATTERNS`: One or more glob patterns, file paths, or directory paths
 
 **Options:**
-- `--output [frontmatter|content|both|template]`: What to output (default: both)
+- `--output [frontmatter|content|both|template|json|yaml]`: What to output (default: both) *(json/yaml added in v0.22.0)*
 - `--skip-heading`: Skip section headings (default: false)
 - `--escape`: Escape special characters in output (default: false) *(New in v0.9.0)*
 - `--template TEMPLATE`: Template string for output (required when --output is template) *(New in v0.9.0)*
 - `--file FILE`: Save output to file instead of console *(New in v0.10.0)*
 - `--individual`: Create individual output files relative to each input file's folder (requires --file) *(New in v0.21.0)*
+- `--map KEY VALUE`: Build key-value map for JSON/YAML output (can be used multiple times, required for json/yaml output) *(New in v0.22.0)*
+- `--pretty`: Prettify JSON/YAML output (only applies with --output json or yaml) *(New in v0.22.0)*
+- `--compact`: Minify JSON/YAML output (only applies with --output json or yaml) *(New in v0.22.0)*
 - `--save-specs DESCRIPTION FILE`: Save command configuration to specs file *(New in v0.5.0)*
 
 **Examples:**
@@ -48,11 +51,26 @@ fmu read file1.md file2.md
 # Read all files in a directory
 fmu read docs/
 
+# Export as JSON (New in v0.22.0)
+fmu read "*.md" --output json --map title '$frontmatter.title' --map path '$filepath' --pretty
+
+# Export as YAML (New in v0.22.0)
+fmu read "*.md" --output yaml --map title '$frontmatter.title' --map tags '$frontmatter.tags' --map timestamp '=now()' --pretty
+
+# Export with compact formatting (New in v0.22.0)
+fmu read "*.md" --output json --map title '$frontmatter.title' --map author '$frontmatter.author' --compact
+
+# Mix literals, placeholders, and functions (New in v0.22.0)
+fmu read "*.md" --output json --map title '$frontmatter.title' --map type "article" --map date '=now()' --map id '=hash($filepath, 10)'
+
 # Export with custom template (New in v0.9.0)
 fmu read "*.md" --output template --template '{ "title": "$frontmatter.title", "path": "$filepath" }'
 
 # Save output to file (New in v0.10.0)
 fmu read "*.md" --file output.txt
+
+# Save JSON output to file (New in v0.22.0)
+fmu read "*.md" --output json --map title '$frontmatter.title' --map content '$content' --pretty --file data.json
 
 # Save template output to JSON file (New in v0.10.0)
 fmu read "*.md" --output template --template '{ "title": "$frontmatter.title" }' --file data.json
@@ -77,6 +95,31 @@ fmu read "*.md" --output frontmatter --save-specs "read blog posts" specs.yaml
 - `$content`: Content after frontmatter
 - `$frontmatter.fieldname`: Access frontmatter field (single value or full array as JSON)
 - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
+
+**Map Value Types (New in v0.22.0):**
+The `--map KEY VALUE` option supports three types of values:
+
+1. **Literals**: Any string, number, or value
+   - Example: `--map type "article"`, `--map count "5"`
+
+2. **Placeholders**: Same as template placeholders
+   - `$filename`: Base filename
+   - `$filepath`: Full file path
+   - `$content`: Content after frontmatter
+   - `$frontmatter.fieldname`: Access frontmatter field
+   - `$frontmatter.fieldname[N]`: Array element access
+   - Example: `--map path '$filepath'`, `--map title '$frontmatter.title'`
+
+3. **Functions**: Built-in functions with `=` prefix
+   - `=now()`: Current timestamp in ISO format
+   - `=list()`: Empty list
+   - `=hash(string, length)`: Generate hash of specified length
+   - `=concat(str1, str2, ...)`: Concatenate strings
+   - `=slice(list, start)`: Slice list from start
+   - `=slice(list, start, stop)`: Slice list from start to stop
+   - `=slice(list, start, stop, step)`: Slice with step
+   - `=coalesce(val1, val2, ...)`: Return first non-empty value
+   - Example: `--map timestamp '=now()'`, `--map id '=hash($filepath, 10)'`
 
 **Escape Option:**
 When `--escape` is used, the following characters are escaped:

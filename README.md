@@ -23,6 +23,7 @@ A Python library and CLI tool for parsing and searching front matter in files.
 - **Template Output**: Export content and frontmatter using custom templates *(New in v0.9.0)*
 - **Character Escaping**: Escape special characters in output *(New in v0.9.0)*
 - **File Output**: Save command output directly to files *(New in v0.10.0)*
+- **JSON/YAML Output**: Export data as JSON or YAML with custom maps *(New in v0.22.0)*
 - **Case Sensitivity**: Support for case-sensitive or case-insensitive matching
 - **Multiple Output Formats**: Console output or CSV export
 - **Glob Pattern Support**: Process multiple files using glob patterns
@@ -315,6 +316,41 @@ env:
 This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when printing non-ASCII characters. It's a recommended CI setting when your content may contain extended Unicode characters.
 
 ## Changelog
+
+### Version 0.22.0
+
+- **JSON/YAML Output Support**
+  - Added `--output json` and `--output yaml` options to the `read` command
+  - Build custom data structures with `--map KEY VALUE` option (can be used multiple times)
+  - Map values support:
+    - Literals: `"some value"`, `123`, `true`
+    - Placeholders: `$filepath`, `$filename`, `$content`, `$frontmatter.fieldname`
+    - Functions: `=now()`, `=list()`, `=hash()`, `=concat()`, etc.
+  - Added `--pretty` option for formatted JSON/YAML output with indentation
+  - Added `--compact` option for minified JSON/YAML output
+  - Example: `fmu read "*.md" --output json --map title '$frontmatter.title' --map path '$filepath' --pretty`
+- **Specs File Support**
+  - Specs files now support `map`, `pretty`, and `compact` options for read commands
+  - Example in specs file:
+    ```yaml
+    - command: read
+      output: json
+      map:
+        - [title, '$frontmatter.title']
+        - [timestamp, '=now()']
+      pretty: true
+    ```
+- **Library API Updates**
+  - `cmd_read()` function now accepts `map_items`, `pretty`, and `compact` parameters
+  - Updated `convert_read_args_to_options()` to handle the new options
+  - Reuses `evaluate_formula()` from update.py for consistent value evaluation
+- **Documentation**
+  - Updated README.md with JSON/YAML output feature description
+  - Added changelog entry for v0.22.0
+- **Testing**
+  - Added 11 comprehensive unit tests for JSON/YAML output functionality
+  - Tests cover: basic output, pretty/compact formatting, literals, placeholders, arrays, and functions
+  - All 238 tests passing
 
 ### Version 0.21.0
 
