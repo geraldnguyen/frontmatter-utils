@@ -617,6 +617,19 @@ If "VALUE" is not provided, remove the selected front matter if it exists regard
 While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section below
 
 
+# Version 0.21.0 - Implement a new `--individual` option for the `read` command
+
+If specified: for each file `F` matched by the 'read' command's pattern, the `--file FILE` option apply relatively to the file `F`'s folder.
+
+Illustration:
+- Given a content root folder with 2 files: `<content root>/folder1/file1.md` and `content root/folder2/subfolder/file2.md`
+- When executing `<content root>$ fmu read *.md --file output.txt` **without** the `--individual` option, the command create a single `<content root>/output.txt` with information extracted from the 2 `.md` files
+- When executing `<content root>$ fmu read *.md --file output.txt --individual` **with** the `--individual` option, the command create 2 output files at:
+  + `<content root>/folder1/output.txt` with info extracted from `<content root>/folder1/file1.md` 
+  + `content root/folder2/subfolder/outut.txt` with info extracted from `content root/folder2/subfolder/file2.md`
+
+While implement the requirements, remember to meet all instructions specified in the `# General requiremts`
+
 # General requirements
 
 - For every new command, new option introduced or modified or removed, ensure the specs file is updated to support and reflect the changes. For example, the specs must support the new `--compute <value>` option of "update" command, the new validation rules of the "validate" commands etc...`
