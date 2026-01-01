@@ -280,6 +280,18 @@ def format_command_text(command_entry: Dict[str, Any]) -> str:
             parts.append(f"--template {format_value(value)}")
         elif key == 'file':
             parts.append(f"--file {format_value(value)}")
+        elif key == 'individual' and value:
+            parts.append("--individual")
+        elif key == 'map' and isinstance(value, list):
+            # Handle list of pairs: [[key, value], [key, value], ...]
+            for pair in value:
+                if isinstance(pair, list) and len(pair) == 2:
+                    map_key, map_val = pair[0], pair[1]
+                    parts.append(f"--map {format_value(map_key)} {format_value(map_val)}")
+        elif key == 'pretty' and value:
+            parts.append("--pretty")
+        elif key == 'compact' and value:
+            parts.append("--compact")
         elif key == 'name':
             parts.append(f"--name {format_value(value)}")
         elif key == 'value':
