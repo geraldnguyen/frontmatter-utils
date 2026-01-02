@@ -46,7 +46,7 @@ This is test content.""")
     def test_cmd_version(self):
         """Test version command."""
         output = self.capture_output(cmd_version)
-        self.assertIn('0.21.0', output)
+        self.assertIn('0.22.0', output)
     
     def test_cmd_help(self):
         """Test help command."""
@@ -254,7 +254,7 @@ Line two""")
     def test_main_version(self):
         """Test main function with version command."""
         output = self.capture_output(main)
-        self.assertIn('0.21.0', output)
+        self.assertIn('0.22.0', output)
     
     @patch('sys.argv', ['fmu', 'help'])
     def test_main_help(self):
@@ -578,6 +578,194 @@ Content 2.""")
             self.assertIn('title: Title 2', content)
             self.assertIn('Content 1', content)
             self.assertIn('Content 2', content)
+    
+    def test_cmd_read_json_output_basic(self):
+        """Test read command with JSON output."""
+        import json
+        map_items = [('title', '$frontmatter.title'), ('author', '$frontmatter.author')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        # Parse JSON to verify it's valid
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Test Post')
+        self.assertEqual(data['author'], 'Test Author')
+    
+    def test_cmd_read_json_output_with_pretty(self):
+        """Test read command with JSON output and pretty formatting."""
+        import json
+        map_items = [('title', '$frontmatter.title'), ('author', '$frontmatter.author')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items, True, False)
+        
+        # Check for pretty formatting (newlines and indentation)
+        self.assertIn('\n', output)
+        self.assertIn('  ', output)
+        
+        # Verify JSON is still valid
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Test Post')
+    
+    def test_cmd_read_json_output_with_compact(self):
+        """Test read command with JSON output and compact formatting."""
+        import json
+        map_items = [('title', '$frontmatter.title'), ('author', '$frontmatter.author')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items, False, True)
+        
+        # Check for compact formatting (no spaces after separators)
+        self.assertNotIn(': ', output)  # No space after colon
+        self.assertIn(':', output)  # But colon still exists
+        
+        # Verify JSON is still valid
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Test Post')
+    
+    def test_cmd_read_yaml_output_basic(self):
+        """Test read command with YAML output."""
+        import yaml
+        map_items = [('title', '$frontmatter.title'), ('author', '$frontmatter.author')]
+        output = self.capture_output(cmd_read, [self.test_file], 'yaml', False, 'yaml', False, None, None, False, map_items)
+        
+        # Parse YAML to verify it's valid
+        data = yaml.safe_load(output)
+        self.assertEqual(data['title'], 'Test Post')
+        self.assertEqual(data['author'], 'Test Author')
+    
+    def test_cmd_read_json_with_literal_values(self):
+        """Test read command with JSON output using literal values."""
+        import json
+        map_items = [('title', '$frontmatter.title'), ('type', 'article'), ('count', '5')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Test Post')
+        self.assertEqual(data['type'], 'article')
+        self.assertEqual(data['count'], '5')
+    
+    def test_cmd_read_json_with_placeholder_filepath(self):
+        """Test read command with JSON output using $filepath placeholder."""
+        import json
+        map_items = [('title', '$frontmatter.title'), ('path', '$filepath'), ('filename', '$filename')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Test Post')
+        self.assertEqual(data['path'], self.test_file)
+        self.assertEqual(data['filename'], 'test.md')
+    
+    def test_cmd_read_json_with_content_placeholder(self):
+        """Test read command with JSON output using $content placeholder."""
+        import json
+        map_items = [('title', '$frontmatter.title'), ('content', '$content')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Test Post')
+        self.assertIn('This is test content', data['content'])
+    
+    def test_cmd_read_json_with_array_frontmatter(self):
+        """Test read command with JSON output using array frontmatter."""
+        import json
+        # Create a test file with array frontmatter
+        test_file_array = os.path.join(self.temp_dir, 'json_array.md')
+        with open(test_file_array, 'w') as f:
+            f.write("""---
+title: Array Test
+tags:
+  - python
+  - testing
+---
+
+Test content.""")
+        
+        map_items = [('title', '$frontmatter.title'), ('tags', '$frontmatter.tags')]
+        output = self.capture_output(cmd_read, [test_file_array], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Array Test')
+        self.assertEqual(data['tags'], ['python', 'testing'])
+    
+    def test_cmd_read_json_with_function_now(self):
+        """Test read command with JSON output using =now() function."""
+        import json
+        from datetime import datetime
+        map_items = [('title', '$frontmatter.title'), ('timestamp', '=now()')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Test Post')
+        # Verify timestamp is in ISO format
+        self.assertIn('T', data['timestamp'])
+        self.assertIn('Z', data['timestamp'])
+        
+        # Verify it's a valid datetime
+        datetime.fromisoformat(data['timestamp'].replace('Z', '+00:00'))
+    
+    def test_cmd_read_yaml_with_pretty_formatting(self):
+        """Test read command with YAML output and pretty formatting."""
+        import yaml
+        # Create a test file with array frontmatter
+        test_file_array = os.path.join(self.temp_dir, 'yaml_pretty.md')
+        with open(test_file_array, 'w') as f:
+            f.write("""---
+title: YAML Test
+tags:
+  - yaml
+  - pretty
+---
+
+Test content.""")
+        
+        map_items = [('title', '$frontmatter.title'), ('tags', '$frontmatter.tags')]
+        output = self.capture_output(cmd_read, [test_file_array], 'yaml', False, 'yaml', False, None, None, False, map_items, True, False)
+        
+        # Check for pretty formatting (expanded list format)
+        self.assertIn('- yaml', output)
+        self.assertIn('- pretty', output)
+        
+        # Verify YAML is still valid
+        data = yaml.safe_load(output)
+        self.assertEqual(data['tags'], ['yaml', 'pretty'])
+    
+    def test_cmd_read_yaml_with_compact_formatting(self):
+        """Test read command with YAML output and compact formatting."""
+        import yaml
+        test_file_array = os.path.join(self.temp_dir, 'yaml_compact.md')
+        with open(test_file_array, 'w') as f:
+            f.write("""---
+title: YAML Test
+tags:
+  - yaml
+  - compact
+---
+
+Test content.""")
+        
+        map_items = [('title', '$frontmatter.title'), ('tags', '$frontmatter.tags')]
+        output = self.capture_output(cmd_read, [test_file_array], 'yaml', False, 'yaml', False, None, None, False, map_items, False, True)
+        
+        # Check for compact formatting (flow style with brackets)
+        self.assertIn('[', output)
+        self.assertIn(']', output)
+        
+        # Verify YAML is still valid
+        data = yaml.safe_load(output)
+        self.assertEqual(data['tags'], ['yaml', 'compact'])
+    
+    def test_cmd_read_json_with_boolean_and_integer_literals(self):
+        """Test read command with JSON output using boolean and integer literals."""
+        import json
+        # When coming from specs file, YAML loads booleans and integers as native Python types
+        map_items = [('title', '$frontmatter.title'), ('published', True), ('draft', False), ('rating', 5)]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Test Post')
+        self.assertEqual(data['published'], True)
+        self.assertEqual(data['draft'], False)
+        self.assertEqual(data['rating'], 5)
+        # Verify they are actual booleans and int, not strings
+        self.assertIsInstance(data['published'], bool)
+        self.assertIsInstance(data['draft'], bool)
+        self.assertIsInstance(data['rating'], int)
 
 
 if __name__ == '__main__':

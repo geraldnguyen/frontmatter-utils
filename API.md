@@ -2,6 +2,8 @@
 
 This document provides a comprehensive reference for the Python library API of `fmu` (frontmatter-utils).
 
+> **Note:** Version 0.22.0 adds JSON/YAML output capabilities to the CLI. These features are implemented in the CLI layer using existing library functions (`parse_file`, `evaluate_formula`, etc.) and do not introduce new public API functions. For CLI-specific features like `--output json/yaml`, `--map`, `--pretty`, and `--compact`, refer to [CLI.md](CLI.md).
+
 ## Core Functions
 
 ### `parse_frontmatter(content, format_type='yaml')`

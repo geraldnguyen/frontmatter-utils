@@ -76,6 +76,15 @@ def convert_read_args_to_options(args) -> Dict[str, Any]:
     
     if hasattr(args, 'individual') and args.individual:
         options['individual'] = True
+    
+    if hasattr(args, 'map') and args.map:
+        options['map'] = args.map
+    
+    if hasattr(args, 'pretty') and args.pretty:
+        options['pretty'] = True
+    
+    if hasattr(args, 'compact') and args.compact:
+        options['compact'] = True
         
     return options
 
@@ -271,6 +280,18 @@ def format_command_text(command_entry: Dict[str, Any]) -> str:
             parts.append(f"--template {format_value(value)}")
         elif key == 'file':
             parts.append(f"--file {format_value(value)}")
+        elif key == 'individual' and value:
+            parts.append("--individual")
+        elif key == 'map' and isinstance(value, list):
+            # Handle list of pairs: [[key, value], [key, value], ...]
+            for pair in value:
+                if isinstance(pair, list) and len(pair) == 2:
+                    map_key, map_val = pair[0], pair[1]
+                    parts.append(f"--map {format_value(map_key)} {format_value(map_val)}")
+        elif key == 'pretty' and value:
+            parts.append("--pretty")
+        elif key == 'compact' and value:
+            parts.append("--compact")
         elif key == 'name':
             parts.append(f"--name {format_value(value)}")
         elif key == 'value':
@@ -376,7 +397,10 @@ def convert_specs_to_args(command_entry: Dict[str, Any]):
             'escape': command_entry.get('escape', False),
             'template': command_entry.get('template'),
             'file': command_entry.get('file'),
-            'individual': command_entry.get('individual', False)
+            'individual': command_entry.get('individual', False),
+            'map': command_entry.get('map'),
+            'pretty': command_entry.get('pretty', False),
+            'compact': command_entry.get('compact', False)
         })
     elif command == 'search':
         args_dict.update({
@@ -507,7 +531,10 @@ def execute_command(command_entry: Dict[str, Any]) -> int:
                 escape=args.escape,
                 template=args.template,
                 file_output=args.file,
-                individual=args.individual
+                individual=args.individual,
+                map_items=args.map,
+                pretty=args.pretty,
+                compact=args.compact
             )
             return 0
         elif command == 'search':
