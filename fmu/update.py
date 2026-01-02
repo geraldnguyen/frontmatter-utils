@@ -447,7 +447,7 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
 
 
 def evaluate_formula(
-    formula: str,
+    formula: Any,
     file_path: str,
     frontmatter: Dict[str, Any],
     content: str
@@ -457,6 +457,7 @@ def evaluate_formula(
     
     Args:
         formula: Formula to evaluate (literal, placeholder, or function)
+                 Can be a string or any other type (bool, int, etc.)
         file_path: Full path to the file
         frontmatter: Frontmatter dictionary
         content: Content string
@@ -464,6 +465,10 @@ def evaluate_formula(
     Returns:
         Evaluated result
     """
+    # If formula is not a string, return it as-is (it's already a literal value)
+    if not isinstance(formula, str):
+        return formula
+    
     # Check if it's a function call
     if formula.startswith('='):
         function_name, parameters = _parse_function_call(formula)

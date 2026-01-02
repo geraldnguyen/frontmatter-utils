@@ -749,6 +749,23 @@ Test content.""")
         # Verify YAML is still valid
         data = yaml.safe_load(output)
         self.assertEqual(data['tags'], ['yaml', 'compact'])
+    
+    def test_cmd_read_json_with_boolean_and_integer_literals(self):
+        """Test read command with JSON output using boolean and integer literals."""
+        import json
+        # When coming from specs file, YAML loads booleans and integers as native Python types
+        map_items = [('title', '$frontmatter.title'), ('published', True), ('draft', False), ('rating', 5)]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['title'], 'Test Post')
+        self.assertEqual(data['published'], True)
+        self.assertEqual(data['draft'], False)
+        self.assertEqual(data['rating'], 5)
+        # Verify they are actual booleans and int, not strings
+        self.assertIsInstance(data['published'], bool)
+        self.assertIsInstance(data['draft'], bool)
+        self.assertIsInstance(data['rating'], int)
 
 
 if __name__ == '__main__':
