@@ -129,7 +129,8 @@ The `--map KEY VALUE` option supports three types of values:
    - `=trim(str)`: Trim both sides whitespace *(New in v0.23.0)*
    - `=truncate(string, max_length)`: Truncate to max length *(New in v0.23.0)*
    - `=wtruncate(string, max_length, suffix)`: Truncate at word boundary with suffix *(New in v0.23.0)*
-   - Example: `--map timestamp '=now()'`, `--map id '=hash($filepath, 10)'`, `--map slug '=basename($frontmatter.url)'`
+   - `=path(segment1, segment2, ...)`: Form path using OS-appropriate separator *(New in v0.23.0)*
+   - Example: `--map timestamp '=now()'`, `--map id '=hash($filepath, 10)'`, `--map slug '=basename($frontmatter.url)'`, `--map output '=path($folderpath, output, data.json)'`
 
 **Escape Option:**
 When `--escape` is used, the following characters are escaped:
@@ -467,6 +468,9 @@ Formulas can be:
 - `wtruncate(string, max_length, suffix)`: Truncate a string at word boundary and append suffix *(New in v0.23.0)*
   - Example: `wtruncate('hello world', 10, '...')` returns `'hello...'`
   - Breaks at the last space before max_length, then appends suffix
+- `path(segment1, segment2, ...)`: Form a path from path segments using OS-appropriate separator *(New in v0.23.0)*
+  - Example: `path('home', 'user', 'documents')` returns `'home/user/documents'` on Unix or `'home\user\documents'` on Windows
+  - Example: `path($folderpath, 'output', 'data.json')` creates path relative to folder
 
 **Compute Behavior:**
 - If the frontmatter field **does not exist**, it will be **created** with the computed value

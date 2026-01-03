@@ -534,6 +534,15 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
         
         return truncated + suffix
     
+    elif function_name == 'path':
+        # Form a path from provided path segments using OS-appropriate separator
+        if len(parameters) < 1:
+            raise ValueError("path() requires at least 1 parameter: path segments")
+        
+        # Convert all parameters to strings and join with OS path separator
+        path_segments = [str(param) for param in parameters]
+        return os.path.join(*path_segments)
+    
     else:
         raise ValueError(f"Unknown function: {function_name}")
 

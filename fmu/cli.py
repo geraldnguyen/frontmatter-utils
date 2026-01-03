@@ -556,7 +556,7 @@ def create_parser():
         action='append',
         nargs=2,
         metavar=('KEY', 'VALUE'),
-        help='Build a key-value map for JSON/YAML output. VALUE can be literals, placeholders ($filepath, $folderpath, $foldername, $frontmatter.name), or functions (=now(), =list(), =basename(), =trim(), =truncate(), =wtruncate()). Can be used multiple times.'
+        help='Build a key-value map for JSON/YAML output. VALUE can be literals, placeholders ($filepath, $folderpath, $foldername, $frontmatter.name), or functions (=now(), =list(), =basename(), =trim(), =truncate(), =wtruncate(), =path()). Can be used multiple times.'
     )
     read_parser.add_argument(
         '--pretty',

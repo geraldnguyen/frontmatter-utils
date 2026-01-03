@@ -1184,6 +1184,32 @@ This is a test document.""")
         self.assertEqual(len(results), 1)
         self.assertTrue(results[0]['changes_made'])
         self.assertEqual(results[0]['new_value'], 'Test...')
+    
+    def test_path_function(self):
+        """Test path() function."""
+        # Test with multiple path segments
+        result = _execute_function('path', ['home', 'user', 'documents'])
+        expected = os.path.join('home', 'user', 'documents')
+        self.assertEqual(result, expected)
+        
+        # Test with single segment
+        result = _execute_function('path', ['folder'])
+        self.assertEqual(result, 'folder')
+        
+        # Test with absolute path components
+        result = _execute_function('path', ['/home', 'user', 'file.txt'])
+        expected = os.path.join('/home', 'user', 'file.txt')
+        self.assertEqual(result, expected)
+    
+    def test_compute_with_path_function(self):
+        """Test compute operation with path() function."""
+        operations = [{'type': 'compute', 'formula': '=path($folderpath, output, data.json)'}]
+        results = update_frontmatter([self.test_file1], 'output_path', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        expected_path = os.path.join(os.path.dirname(self.test_file1), 'output', 'data.json')
+        self.assertEqual(results[0]['new_value'], expected_path)
 
 
 if __name__ == '__main__':

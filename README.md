@@ -339,12 +339,16 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
     - Example: `=truncate('hello world', 5)` returns `'hello'`
   - `=wtruncate(string, max_length, suffix)`: truncates a string at word boundary and appends suffix
     - Example: `=wtruncate('hello world', 10, '...')` returns `'hello...'`
+  - `=path(segment1, segment2, ...)`: forms a path from segments using OS-appropriate separator
+    - Example: `=path('home', 'user', 'docs')` returns `'home/user/docs'` on Unix
+    - Example: `=path($folderpath, 'output', 'data.json')` creates path relative to folder
   - These functions are available in both `read` and `update` commands
 
 - **Usage Examples**
   - Create slug from URL: `fmu update "*.md" --name slug --compute '=basename($frontmatter.url)'`
   - Trim titles: `fmu update "*.md" --name title --compute '=trim($frontmatter.title)'`
   - Create short descriptions: `fmu update "*.md" --name summary --compute '=wtruncate($frontmatter.description, 100, ...)'`
+  - Build output paths: `fmu update "*.md" --name output_path --compute '=path($folderpath, output, data.json)'`
   - Export folder info: `fmu read "*.md" --output json --map folder '$foldername' --map path '$folderpath'`
 
 - **Documentation**

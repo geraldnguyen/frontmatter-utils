@@ -273,6 +273,7 @@ commands:
 - `trim(str)`: Trim both sides whitespace *(New in v0.23.0)*
 - `truncate(string, max_length)`: Truncate to max length *(New in v0.23.0)*
 - `wtruncate(string, max_length, suffix)`: Truncate at word boundary with suffix *(New in v0.23.0)*
+- `path(segment1, segment2, ...)`: Form path using OS-appropriate separator *(New in v0.23.0)*
 
 ## Usage
 

@@ -437,7 +437,7 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 **New Features (v0.12.0):**
 - **Compute Operations**: Calculate and set frontmatter values using formulas
 - **Placeholder References**: Access file metadata and other frontmatter fields
-- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce(), basename(), ltrim(), rtrim(), trim(), truncate(), wtruncate() for dynamic value generation
+- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce(), basename(), ltrim(), rtrim(), trim(), truncate(), wtruncate(), path() for dynamic value generation
 - **Auto-create Fields**: Compute operations can create frontmatter fields that don't exist
 - **List Append**: Automatically append computed values to existing list fields
 
@@ -658,6 +658,34 @@ operations = [{'type': 'compute', 'formula': '=wtruncate($frontmatter.descriptio
 results = update_frontmatter(['*.md'], 'summary', operations, deduplication=False)
 
 # Example: "hello world" with max_length=10 and suffix="..." becomes "hello..."
+```
+
+#### `path(segment1, segment2, ...)` *(New in v0.23.0)*
+Form a file path from multiple path segments using the OS-appropriate path separator.
+
+**Parameters:**
+- `segment1, segment2, ...`: Path segments to join (can be placeholder references or literals)
+
+**Returns:** Complete path with OS-appropriate separators (e.g., `/` on Unix, `\` on Windows)
+
+**Behavior:**
+- Uses `os.path.join()` internally
+- Handles absolute and relative path segments correctly
+- Works with any number of segments
+
+**Examples:**
+```python
+# Create output path relative to current file's folder
+operations = [{'type': 'compute', 'formula': '=path($folderpath, output, data.json)'}]
+results = update_frontmatter(['*.md'], 'output_path', operations, deduplication=False)
+
+# Combine multiple segments
+operations = [{'type': 'compute', 'formula': '=path(/home, user, documents, file.txt)'}]
+results = update_frontmatter(['*.md'], 'backup_path', operations, deduplication=False)
+
+# Use with other placeholders
+operations = [{'type': 'compute', 'formula': '=path($folderpath, $foldername, output.json)'}]
+results = update_frontmatter(['*.md'], 'result_path', operations, deduplication=False)
 ```
 
 ### Placeholder References

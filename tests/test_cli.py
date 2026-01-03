@@ -826,6 +826,16 @@ Test content.""")
         
         data = json.loads(output.strip())
         self.assertEqual(data['short'], 'Test...')
+    
+    def test_cmd_read_json_with_path_function(self):
+        """Test read command with JSON output using =path() function (v0.23.0)."""
+        import json
+        map_items = [('output_path', '=path($folderpath, output, data.json)')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        expected = os.path.join(os.path.dirname(self.test_file), 'output', 'data.json')
+        self.assertEqual(data['output_path'], expected)
 
 
 if __name__ == '__main__':
