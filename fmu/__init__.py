@@ -4,7 +4,7 @@ fmu - Front Matter Utils
 A Python library and CLI tool for parsing and searching front matter in files.
 """
 
-__version__ = "0.22.0"
+__version__ = "0.23.0"
 __author__ = "Gerald Nguyen The Huy"
 
 from .core import parse_frontmatter, extract_content, parse_file

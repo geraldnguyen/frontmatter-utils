@@ -766,6 +766,66 @@ Test content.""")
         self.assertIsInstance(data['published'], bool)
         self.assertIsInstance(data['draft'], bool)
         self.assertIsInstance(data['rating'], int)
+    
+    def test_cmd_read_template_with_folderpath(self):
+        """Test read command with template using $folderpath (v0.23.0)."""
+        template = '{ "folder": "$folderpath" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        expected_folder = os.path.dirname(self.test_file)
+        self.assertIn(f'"folder": "{expected_folder}"', output)
+    
+    def test_cmd_read_template_with_foldername(self):
+        """Test read command with template using $foldername (v0.23.0)."""
+        template = '{ "folder": "$foldername" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        expected_foldername = os.path.basename(os.path.dirname(self.test_file))
+        self.assertIn(f'"folder": "{expected_foldername}"', output)
+    
+    def test_cmd_read_json_with_folderpath_placeholder(self):
+        """Test read command with JSON output using $folderpath placeholder (v0.23.0)."""
+        import json
+        map_items = [('folder', '$folderpath')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        expected_folder = os.path.dirname(self.test_file)
+        self.assertEqual(data['folder'], expected_folder)
+    
+    def test_cmd_read_json_with_basename_function(self):
+        """Test read command with JSON output using =basename() function (v0.23.0)."""
+        import json
+        map_items = [('name', '=basename($filepath)')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['name'], 'test')
+    
+    def test_cmd_read_json_with_trim_function(self):
+        """Test read command with JSON output using =trim() function (v0.23.0)."""
+        import json
+        map_items = [('trimmed', '=trim(  hello world  )')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['trimmed'], 'hello world')
+    
+    def test_cmd_read_json_with_truncate_function(self):
+        """Test read command with JSON output using =truncate() function (v0.23.0)."""
+        import json
+        map_items = [('short', '=truncate($frontmatter.title, 4)')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['short'], 'Test')
+    
+    def test_cmd_read_json_with_wtruncate_function(self):
+        """Test read command with JSON output using =wtruncate() function (v0.23.0)."""
+        import json
+        map_items = [('short', '=wtruncate($frontmatter.title, 8, ...)')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['short'], 'Test...')
 
 
 if __name__ == '__main__':

@@ -15,7 +15,7 @@ import yaml
 
 
 # Placeholder patterns that should be skipped by coalesce when unresolved
-UNRESOLVED_PLACEHOLDER_PATTERNS = ['$frontmatter.', '$filename', '$filepath', '$content']
+UNRESOLVED_PLACEHOLDER_PATTERNS = ['$frontmatter.', '$filename', '$filepath', '$content', '$folderpath', '$foldername']
 
 
 def _is_unresolved_placeholder(value: str) -> bool:
@@ -239,6 +239,10 @@ def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str
         return os.path.basename(file_path)
     elif placeholder == '$filepath':
         return file_path
+    elif placeholder == '$folderpath':
+        return os.path.dirname(file_path)
+    elif placeholder == '$foldername':
+        return os.path.basename(os.path.dirname(file_path))
     elif placeholder == '$content':
         return content
     elif placeholder.startswith('$frontmatter.'):
@@ -441,6 +445,96 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
         
         # If all parameters are nil/empty/blank, return None
         return None
+    
+    elif function_name == 'basename':
+        # Return the base name (without extension) of the file path
+        if len(parameters) < 1:
+            raise ValueError("basename() requires 1 parameter: file_path")
+        
+        import os
+        file_path = str(parameters[0])
+        # Get the base name and remove extension
+        base = os.path.basename(file_path)
+        # Remove extension
+        name_without_ext = os.path.splitext(base)[0]
+        return name_without_ext
+    
+    elif function_name == 'ltrim':
+        # Trim left whitespace from string
+        if len(parameters) < 1:
+            raise ValueError("ltrim() requires 1 parameter: string")
+        
+        string_to_trim = str(parameters[0])
+        return string_to_trim.lstrip()
+    
+    elif function_name == 'rtrim':
+        # Trim right whitespace from string
+        if len(parameters) < 1:
+            raise ValueError("rtrim() requires 1 parameter: string")
+        
+        string_to_trim = str(parameters[0])
+        return string_to_trim.rstrip()
+    
+    elif function_name == 'trim':
+        # Trim both left and right whitespace from string
+        if len(parameters) < 1:
+            raise ValueError("trim() requires 1 parameter: string")
+        
+        string_to_trim = str(parameters[0])
+        return string_to_trim.strip()
+    
+    elif function_name == 'truncate':
+        # Truncate string to max_length
+        if len(parameters) < 2:
+            raise ValueError("truncate() requires 2 parameters: string and max_length")
+        
+        string_to_truncate = str(parameters[0])
+        try:
+            max_length = int(parameters[1])
+        except (ValueError, TypeError):
+            raise ValueError("max_length must be an integer")
+        
+        if len(string_to_truncate) <= max_length:
+            return string_to_truncate
+        else:
+            return string_to_truncate[:max_length]
+    
+    elif function_name == 'wtruncate':
+        # Truncate string to word boundary with suffix
+        if len(parameters) < 3:
+            raise ValueError("wtruncate() requires 3 parameters: string, max_length, and suffix")
+        
+        string_to_truncate = str(parameters[0])
+        try:
+            max_length = int(parameters[1])
+        except (ValueError, TypeError):
+            raise ValueError("max_length must be an integer")
+        
+        suffix = str(parameters[2])
+        
+        # If string is already shorter than max_length, return as-is
+        if len(string_to_truncate) <= max_length:
+            return string_to_truncate
+        
+        # Calculate available space for actual content (max_length - suffix_length)
+        available_space = max_length - len(suffix)
+        
+        if available_space <= 0:
+            # If suffix is longer than max_length, just return truncated suffix
+            return suffix[:max_length]
+        
+        # Truncate to available space
+        truncated = string_to_truncate[:available_space]
+        
+        # Find the last word boundary (space)
+        last_space = truncated.rfind(' ')
+        
+        if last_space > 0:
+            # Truncate at word boundary
+            truncated = truncated[:last_space]
+        # If no space found, use the truncated string as-is
+        
+        return truncated + suffix
     
     else:
         raise ValueError(f"Unknown function: {function_name}")
