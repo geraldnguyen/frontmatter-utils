@@ -133,7 +133,8 @@ The `--map KEY VALUE` option supports three types of values:
    - `=truncate(string, max_length)` / `$truncate(...)`: Truncate to max length *(New in v0.23.0)*
    - `=wtruncate(string, max_length, suffix)` / `$wtruncate(...)`: Truncate at word boundary with suffix *(New in v0.23.0)*
    - `=path(segment1, segment2, ...)` / `$path(...)`: Form path using OS-appropriate separator *(New in v0.23.0)*
-   - Example: `--map timestamp '=now()'`, `--map concat '$concat($frontmatter.title, .txt)'`, `--map nested '=path($folderpath, $concat(output, .json))'`
+   - `=flat_list(element1, element2, ...)` / `$flat_list(...)`: Flatten elements into a list, expanding nested lists *(New in v0.23.0)*
+   - Example: `--map timestamp '=now()'`, `--map concat '$concat($frontmatter.title, .txt)'`, `--map nested '=path($folderpath, $concat(output, .json))'`, `--map combined '=flat_list(new, $frontmatter.tags, extra)'`
 
 **Escape Option:**
 When `--escape` is used, the following characters are escaped:
@@ -474,6 +475,12 @@ Formulas can be:
 - `path(segment1, segment2, ...)`: Form a path from path segments using OS-appropriate separator *(New in v0.23.0)*
   - Example: `path('home', 'user', 'documents')` returns `'home/user/documents'` on Unix or `'home\user\documents'` on Windows
   - Example: `path($folderpath, 'output', 'data.json')` creates path relative to folder
+- `flat_list(element1, element2, ...)`: Create a flattened list from elements, expanding any nested lists *(New in v0.23.0)*
+  - If an element is a list, its elements are added to the result
+  - If an element is not a list, it's added as-is
+  - Elements are added in the order specified
+  - Example: `flat_list('a', ['b', 'c'], 'd')` returns `['a', 'b', 'c', 'd']`
+  - Example: `flat_list('new', $frontmatter.tags, 'extra')` combines literal values with a list field
 
 **Compute Behavior:**
 - If the frontmatter field **does not exist**, it will be **created** with the computed value

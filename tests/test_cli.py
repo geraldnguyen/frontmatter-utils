@@ -855,6 +855,27 @@ Test content.""")
         
         data = json.loads(output.strip())
         self.assertEqual(data['trimmed_concat'], 'Test Post')
+    
+    def test_cmd_read_json_with_flat_list_function(self):
+        """Test read command with JSON output using =flat_list() function (v0.23.0)."""
+        import json
+        # Create a test file with tags
+        test_file_tags = os.path.join(self.temp_dir, 'test_tags.md')
+        with open(test_file_tags, 'w') as f:
+            f.write("""---
+title: Test Tags
+tags:
+  - python
+  - javascript
+---
+
+Test content.""")
+        
+        map_items = [('all_tags', '=flat_list(golang, $frontmatter.tags, rust)')]
+        output = self.capture_output(cmd_read, [test_file_tags], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['all_tags'], ['golang', 'python', 'javascript', 'rust'])
 
 
 if __name__ == '__main__':

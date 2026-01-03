@@ -1255,6 +1255,61 @@ This is a test document.""")
         self.assertTrue(results[0]['changes_made'])
         expected = os.path.join(os.path.dirname(self.test_file1), 'test.json')
         self.assertEqual(results[0]['new_value'], expected)
+    
+    def test_flat_list_function(self):
+        """Test flat_list() function (v0.23.0)."""
+        # Test with simple elements
+        result = _execute_function('flat_list', ['a', 'b', 'c'])
+        self.assertEqual(result, ['a', 'b', 'c'])
+        
+        # Test with list elements
+        result = _execute_function('flat_list', [['a', 'b'], 'c', ['d', 'e']])
+        self.assertEqual(result, ['a', 'b', 'c', 'd', 'e'])
+        
+        # Test with mixed types
+        result = _execute_function('flat_list', ['text', 1, [2, 3], 'more'])
+        self.assertEqual(result, ['text', 1, 2, 3, 'more'])
+        
+        # Test with single list
+        result = _execute_function('flat_list', [['x', 'y', 'z']])
+        self.assertEqual(result, ['x', 'y', 'z'])
+        
+        # Test with empty list
+        result = _execute_function('flat_list', [[], 'a', []])
+        self.assertEqual(result, ['a'])
+    
+    def test_compute_with_flat_list_function(self):
+        """Test compute operation with flat_list() function (v0.23.0)."""
+        # Create a file with tags
+        operations = [{'type': 'compute', 'formula': '=flat_list(new-tag, $frontmatter.url)'}]
+        results = update_frontmatter([self.test_file1], 'combined', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], ['new-tag', '/posts/original-url.html'])
+    
+    def test_compute_with_flat_list_and_slice(self):
+        """Test compute operation combining flat_list() with slice() (v0.23.0)."""
+        # First create a tags list
+        with open(self.test_file1, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test Document
+url: /posts/original-url.html
+tags:
+  - python
+  - javascript
+  - ruby
+---
+
+This is a test document.""")
+        
+        # Use flat_list to combine new tags with existing ones
+        operations = [{'type': 'compute', 'formula': '=flat_list(golang, $frontmatter.tags, rust)'}]
+        results = update_frontmatter([self.test_file1], 'all_tags', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], ['golang', 'python', 'javascript', 'ruby', 'rust'])
 
 
 if __name__ == '__main__':

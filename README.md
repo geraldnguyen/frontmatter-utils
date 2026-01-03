@@ -342,6 +342,9 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
   - `=path(segment1, segment2, ...)`: forms a path from segments using OS-appropriate separator
     - Example: `=path('home', 'user', 'docs')` returns `'home/user/docs'` on Unix
     - Example: `=path($folderpath, 'output', 'data.json')` creates path relative to folder
+  - `=flat_list(element1, element2, ...)`: creates a flattened list from elements, expanding nested lists
+    - Example: `=flat_list('a', ['b', 'c'], 'd')` returns `['a', 'b', 'c', 'd']`
+    - Example: `=flat_list('new', $frontmatter.tags, 'extra')` combines literals with list field
   - These functions are available in both `read` and `update` commands
 
 - **Enhanced Function Call Syntax** *(v0.23.0)*
@@ -359,6 +362,7 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
   - Trim titles: `fmu update "*.md" --name title --compute '=trim($frontmatter.title)'`
   - Create short descriptions: `fmu update "*.md" --name summary --compute '=wtruncate($frontmatter.description, 100, ...)'`
   - Build output paths: `fmu update "*.md" --name output_path --compute '=path($folderpath, output, data.json)'`
+  - Flatten lists: `fmu update "*.md" --name all_tags --compute '=flat_list(new, $frontmatter.tags, extra)'`
   - Nested functions: `fmu update "*.md" --name full_path --compute '=path($folderpath, $concat(output, .json))'`
   - Export folder info: `fmu read "*.md" --output json --map folder '$foldername' --map path '$folderpath'`
 

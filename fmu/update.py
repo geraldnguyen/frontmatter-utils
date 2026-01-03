@@ -554,6 +554,22 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
         path_segments = [str(param) for param in parameters]
         return os.path.join(*path_segments)
     
+    elif function_name == 'flat_list':
+        # Flatten a list of elements, expanding any nested lists
+        if len(parameters) < 1:
+            raise ValueError("flat_list() requires at least 1 parameter: elements")
+        
+        result = []
+        for param in parameters:
+            if isinstance(param, list):
+                # If parameter is a list, add all its elements to result
+                result.extend(param)
+            else:
+                # If parameter is not a list, add it as-is
+                result.append(param)
+        
+        return result
+    
     else:
         raise ValueError(f"Unknown function: {function_name}")
 

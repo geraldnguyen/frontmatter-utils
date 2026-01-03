@@ -437,7 +437,7 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 **New Features (v0.12.0):**
 - **Compute Operations**: Calculate and set frontmatter values using formulas
 - **Placeholder References**: Access file metadata and other frontmatter fields
-- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce(), basename(), ltrim(), rtrim(), trim(), truncate(), wtruncate(), path() for dynamic value generation
+- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce(), basename(), ltrim(), rtrim(), trim(), truncate(), wtruncate(), path(), flat_list() for dynamic value generation
 - **Auto-create Fields**: Compute operations can create frontmatter fields that don't exist
 - **List Append**: Automatically append computed values to existing list fields
 
@@ -691,6 +691,36 @@ results = update_frontmatter(['*.md'], 'backup_path', operations, deduplication=
 # Use with other placeholders
 operations = [{'type': 'compute', 'formula': '=path($folderpath, $foldername, output.json)'}]
 results = update_frontmatter(['*.md'], 'result_path', operations, deduplication=False)
+```
+
+#### `flat_list(element1, element2, ...)` *(New in v0.23.0)*
+Create a flattened list from multiple elements, expanding any nested lists.
+
+**Parameters:**
+- `element1, element2, ...`: Variable number of elements (can be any type, including lists)
+
+**Returns:** Flattened list containing all elements in order
+
+**Behavior:**
+- If an element is a list, its elements are added to the result list
+- If an element is not a list, it's added as-is to the result list
+- Elements are processed and added in the order specified
+- Useful for combining literal values with list fields
+
+**Examples:**
+```python
+# Combine literal values with list field
+operations = [{'type': 'compute', 'formula': '=flat_list(new-tag, $frontmatter.tags, extra-tag)'}]
+results = update_frontmatter(['*.md'], 'all_tags', operations, deduplication=False)
+
+# Combine multiple list fields
+operations = [{'type': 'compute', 'formula': '=flat_list($frontmatter.tags, $frontmatter.categories)'}]
+results = update_frontmatter(['*.md'], 'combined', operations, deduplication=False)
+
+# Mix literals and lists
+operations = [{'type': 'compute', 'formula': '=flat_list(header, [a, b, c], footer)'}]
+results = update_frontmatter(['*.md'], 'items', operations, deduplication=False)
+# Result: ['header', 'a', 'b', 'c', 'footer']
 ```
 
 ### Placeholder References

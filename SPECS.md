@@ -277,6 +277,7 @@ commands:
 - `truncate(string, max_length)` / `$truncate(...)`: Truncate to max length *(New in v0.23.0)*
 - `wtruncate(string, max_length, suffix)` / `$wtruncate(...)`: Truncate at word boundary with suffix *(New in v0.23.0)*
 - `path(segment1, segment2, ...)` / `$path(...)`: Form path using OS-appropriate separator *(New in v0.23.0)*
+- `flat_list(element1, element2, ...)` / `$flat_list(...)`: Flatten elements into list, expanding nested lists *(New in v0.23.0)*
 
 ## Usage
 
