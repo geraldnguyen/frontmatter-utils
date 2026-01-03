@@ -92,6 +92,8 @@ fmu read "*.md" --output frontmatter --save-specs "read blog posts" specs.yaml
 **Template Placeholders:**
 - `$filename`: Base filename (e.g., "post.md")
 - `$filepath`: Full file path
+- `$folderpath`: Full path to the folder containing the file *(New in v0.23.0)*
+- `$foldername`: Just the folder name without full path *(New in v0.23.0)*
 - `$content`: Content after frontmatter
 - `$frontmatter.fieldname`: Access frontmatter field (single value or full array as JSON)
 - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
@@ -105,10 +107,12 @@ The `--map KEY VALUE` option supports three types of values:
 2. **Placeholders**: Same as template placeholders
    - `$filename`: Base filename
    - `$filepath`: Full file path
+   - `$folderpath`: Full folder path *(New in v0.23.0)*
+   - `$foldername`: Folder name only *(New in v0.23.0)*
    - `$content`: Content after frontmatter
    - `$frontmatter.fieldname`: Access frontmatter field
    - `$frontmatter.fieldname[N]`: Array element access
-   - Example: `--map path '$filepath'`, `--map title '$frontmatter.title'`
+   - Example: `--map path '$filepath'`, `--map title '$frontmatter.title'`, `--map folder '$foldername'`
 
 3. **Functions**: Built-in functions with `=` prefix
    - `=now()`: Current timestamp in ISO format
@@ -119,7 +123,13 @@ The `--map KEY VALUE` option supports three types of values:
    - `=slice(list, start, stop)`: Slice list from start to stop
    - `=slice(list, start, stop, step)`: Slice with step
    - `=coalesce(val1, val2, ...)`: Return first non-empty value
-   - Example: `--map timestamp '=now()'`, `--map id '=hash($filepath, 10)'`
+   - `=basename(file_path)`: Get base name without extension *(New in v0.23.0)*
+   - `=ltrim(str)`: Trim left whitespace *(New in v0.23.0)*
+   - `=rtrim(str)`: Trim right whitespace *(New in v0.23.0)*
+   - `=trim(str)`: Trim both sides whitespace *(New in v0.23.0)*
+   - `=truncate(string, max_length)`: Truncate to max length *(New in v0.23.0)*
+   - `=wtruncate(string, max_length, suffix)`: Truncate at word boundary with suffix *(New in v0.23.0)*
+   - Example: `--map timestamp '=now()'`, `--map id '=hash($filepath, 10)'`, `--map slug '=basename($frontmatter.url)'`
 
 **Escape Option:**
 When `--escape` is used, the following characters are escaped:
@@ -335,6 +345,14 @@ fmu update "*.md" --name aliases --compute "=concat(/post/, $frontmatter.content
 ## Use placeholder references
 fmu update "*.md" --name source_file --compute "$filename"
 fmu update "*.md" --name full_path --compute "$filepath"
+fmu update "*.md" --name folder_path --compute "$folderpath"  # v0.23.0
+fmu update "*.md" --name folder_name --compute "$foldername"  # v0.23.0
+
+## String manipulation functions (v0.23.0)
+fmu update "*.md" --name slug --compute "=basename($frontmatter.url)"
+fmu update "*.md" --name clean_title --compute "=trim($frontmatter.title)"
+fmu update "*.md" --name short_desc --compute "=truncate($frontmatter.description, 100)"
+fmu update "*.md" --name summary --compute "=wtruncate($frontmatter.description, 150, ...)"
 
 ## Multiple compute operations (executed in order)
 fmu update "index.md" --name aliases --compute "=list()"
@@ -414,6 +432,8 @@ Formulas can be:
 - **Placeholder references**:
   - `$filename`: Base filename (e.g., "post.md")
   - `$filepath`: Full file path
+  - `$folderpath`: Full path to the folder containing the file *(New in v0.23.0)*
+  - `$foldername`: Just the folder name without full path *(New in v0.23.0)*
   - `$content`: Content after frontmatter
   - `$frontmatter.fieldname`: Access frontmatter field (single value or array)
   - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
@@ -434,6 +454,19 @@ Formulas can be:
   - Keeps: Numbers (including 0), booleans (including False), non-empty strings/lists/dicts
   - Returns: The first valid value, or None if all values are empty
   - Example: `coalesce($frontmatter.description, $frontmatter.summary, "default")` uses description if not empty, falls back to summary, then to "default"
+- `basename(file_path)`: Return the base name of a file without its extension *(New in v0.23.0)*
+  - Example: `basename('/path/to/file.txt')` returns `'file'`
+- `ltrim(str)`: Trim whitespace from the left side of a string *(New in v0.23.0)*
+  - Example: `ltrim('  hello')` returns `'hello'`
+- `rtrim(str)`: Trim whitespace from the right side of a string *(New in v0.23.0)*
+  - Example: `rtrim('hello  ')` returns `'hello'`
+- `trim(str)`: Trim whitespace from both sides of a string *(New in v0.23.0)*
+  - Example: `trim('  hello  ')` returns `'hello'`
+- `truncate(string, max_length)`: Truncate a string to the specified maximum length *(New in v0.23.0)*
+  - Example: `truncate('hello world', 5)` returns `'hello'`
+- `wtruncate(string, max_length, suffix)`: Truncate a string at word boundary and append suffix *(New in v0.23.0)*
+  - Example: `wtruncate('hello world', 10, '...')` returns `'hello...'`
+  - Breaks at the last space before max_length, then appends suffix
 
 **Compute Behavior:**
 - If the frontmatter field **does not exist**, it will be **created** with the computed value

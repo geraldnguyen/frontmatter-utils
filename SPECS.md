@@ -255,7 +255,7 @@ commands:
 
 **Compute Formulas (v0.12.0):**
 - Literal values: `"1"`, `"2nd"`, `"any text"`
-- Placeholder references: `"$filename"`, `"$filepath"`, `"$content"`, `"$frontmatter.name"`, `"$frontmatter.name[index]"`
+- Placeholder references: `"$filename"`, `"$filepath"`, `"$folderpath"`, `"$foldername"`, `"$content"`, `"$frontmatter.name"`, `"$frontmatter.name[index]"` *(folderpath/foldername added in v0.23.0)*
 - Function calls: `"=now()"`, `"=list()"`, `"=hash($frontmatter.url, 10)"`, `"=concat(/post/, $frontmatter.id)"`
 
 **Built-in Functions:**
@@ -267,6 +267,12 @@ commands:
 - `slice(list, start, stop)`: Slice list from start to stop (exclusive) *(New in v0.13.0)*
 - `slice(list, start, stop, step)`: Slice list with step interval *(New in v0.13.0)*
 - `coalesce(val1, val2, ...)`: Return first non-empty, non-blank value. Skips None, empty strings, whitespace, empty lists/dicts, unresolved placeholders. *(New in v0.18.0)*
+- `basename(file_path)`: Return base name without extension *(New in v0.23.0)*
+- `ltrim(str)`: Trim left whitespace *(New in v0.23.0)*
+- `rtrim(str)`: Trim right whitespace *(New in v0.23.0)*
+- `trim(str)`: Trim both sides whitespace *(New in v0.23.0)*
+- `truncate(string, max_length)`: Truncate to max length *(New in v0.23.0)*
+- `wtruncate(string, max_length, suffix)`: Truncate at word boundary with suffix *(New in v0.23.0)*
 
 ## Usage
 

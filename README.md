@@ -317,6 +317,46 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
 
 ## Changelog
 
+### Version 0.23.0
+
+- **New Built-in Variables**
+  - Added `$folderpath` variable: returns the full path to the folder containing the file
+  - Added `$foldername` variable: returns just the folder name (without full path)
+  - These variables are available in both `read` and `update` commands
+  - Example: `fmu read "*.md" --output json --map folder '$foldername'`
+  - Example: `fmu update "*.md" --name folder_path --compute '$folderpath'`
+
+- **New Built-in Functions**
+  - `=basename(file_path)`: returns the base name of a file without its extension
+    - Example: `=basename('/path/to/file.txt')` returns `'file'`
+  - `=ltrim(str)`: trims whitespace from the left side of a string
+    - Example: `=ltrim('  hello')` returns `'hello'`
+  - `=rtrim(str)`: trims whitespace from the right side of a string
+    - Example: `=rtrim('hello  ')` returns `'hello'`
+  - `=trim(str)`: trims whitespace from both sides of a string
+    - Example: `=trim('  hello  ')` returns `'hello'`
+  - `=truncate(string, max_length)`: truncates a string to the specified maximum length
+    - Example: `=truncate('hello world', 5)` returns `'hello'`
+  - `=wtruncate(string, max_length, suffix)`: truncates a string at word boundary and appends suffix
+    - Example: `=wtruncate('hello world', 10, '...')` returns `'hello...'`
+  - These functions are available in both `read` and `update` commands
+
+- **Usage Examples**
+  - Create slug from URL: `fmu update "*.md" --name slug --compute '=basename($frontmatter.url)'`
+  - Trim titles: `fmu update "*.md" --name title --compute '=trim($frontmatter.title)'`
+  - Create short descriptions: `fmu update "*.md" --name summary --compute '=wtruncate($frontmatter.description, 100, ...)'`
+  - Export folder info: `fmu read "*.md" --output json --map folder '$foldername' --map path '$folderpath'`
+
+- **Documentation**
+  - Updated CLI help text to include new variables and functions
+  - Updated README.md with version 0.23.0 changelog
+  - CLI.md, API.md, and SPECS.md to be updated with comprehensive documentation
+
+- **Testing**
+  - Added 21 comprehensive unit tests for new variables and functions
+  - Tests cover both `read` and `update` command usage
+  - All tests passing
+
 ### Version 0.22.0
 
 - **JSON/YAML Output Support**
