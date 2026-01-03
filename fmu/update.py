@@ -5,6 +5,7 @@ Update functionality for frontmatter fields.
 import re
 import csv
 import sys
+import os
 import hashlib
 import random
 import string
@@ -233,8 +234,6 @@ def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str
     Returns:
         Resolved value
     """
-    import os
-    
     if placeholder == '$filename':
         return os.path.basename(file_path)
     elif placeholder == '$filepath':
@@ -451,7 +450,6 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
         if len(parameters) < 1:
             raise ValueError("basename() requires 1 parameter: file_path")
         
-        import os
         file_path = str(parameters[0])
         # Get the base name and remove extension
         base = os.path.basename(file_path)
