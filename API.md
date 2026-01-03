@@ -446,7 +446,12 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 The update operations support compute formulas that can be:
 - **Literal values**: `1`, `2nd`, `just any text`
 - **Placeholder references**: `$filename`, `$filepath`, `$folderpath`, `$foldername`, `$content`, `$frontmatter.name`, `$frontmatter.name[index]`
-- **Function calls**: `=function_name(param1, param2, ...)`
+- **Function calls**: `=function_name(param1, param2, ...)` or `$function_name(param1, param2, ...)` *($ prefix added in v0.23.0)*
+  - The `=` prefix can only be used at the beginning of an expression
+  - The `$` prefix can be used at the beginning or nested within other expressions
+  - Example with `=`: `=concat($frontmatter.title, .txt)`
+  - Example with `$` at beginning: `$concat($frontmatter.title, .txt)`
+  - Example with nested `$`: `=path($folderpath, $concat(output, .json))`
 
 ### Built-in Compute Functions
 

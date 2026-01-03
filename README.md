@@ -344,11 +344,22 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
     - Example: `=path($folderpath, 'output', 'data.json')` creates path relative to folder
   - These functions are available in both `read` and `update` commands
 
+- **Enhanced Function Call Syntax** *(v0.23.0)*
+  - Functions can now use `$` prefix in addition to `=` prefix
+  - `=` prefix: only at the beginning (e.g., `=concat($frontmatter.title, .txt)`)
+  - `$` prefix: at beginning or nested (e.g., `$concat(...)` or `=path($concat(...))`
+  - Enables nested function calls: `=path($folderpath, $concat(output, .json))`
+  - Examples:
+    - `$concat($frontmatter.title, .txt)` - $ prefix at beginning
+    - `=path($folderpath, $concat(output, .json))` - nested $ function inside = function
+    - `$trim($concat(  , $frontmatter.title,  ))` - nested functions with $ prefix
+
 - **Usage Examples**
   - Create slug from URL: `fmu update "*.md" --name slug --compute '=basename($frontmatter.url)'`
   - Trim titles: `fmu update "*.md" --name title --compute '=trim($frontmatter.title)'`
   - Create short descriptions: `fmu update "*.md" --name summary --compute '=wtruncate($frontmatter.description, 100, ...)'`
   - Build output paths: `fmu update "*.md" --name output_path --compute '=path($folderpath, output, data.json)'`
+  - Nested functions: `fmu update "*.md" --name full_path --compute '=path($folderpath, $concat(output, .json))'`
   - Export folder info: `fmu read "*.md" --output json --map folder '$foldername' --map path '$folderpath'`
 
 - **Documentation**

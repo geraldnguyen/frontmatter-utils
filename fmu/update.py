@@ -223,10 +223,10 @@ def deduplicate_array(value: Any) -> Any:
 
 def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str, Any], content: str) -> Any:
     """
-    Resolve a placeholder reference.
+    Resolve a placeholder reference or function call.
     
     Args:
-        placeholder: Placeholder string (e.g., "$filename", "$frontmatter.title")
+        placeholder: Placeholder string (e.g., "$filename", "$frontmatter.title", "$concat(...)")
         file_path: Full path to the file
         frontmatter: Frontmatter dictionary
         content: Content string
@@ -234,6 +234,11 @@ def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str
     Returns:
         Resolved value
     """
+    # Check if it's a function call (starts with $ and contains parentheses)
+    if placeholder.startswith('$') and '(' in placeholder:
+        # This is a function call, use evaluate_formula to handle it
+        return evaluate_formula(placeholder, file_path, frontmatter, content)
+    
     if placeholder == '$filename':
         return os.path.basename(file_path)
     elif placeholder == '$filepath':
@@ -275,13 +280,14 @@ def _parse_function_call(formula: str) -> tuple:
     Parse a function call from a formula.
     
     Args:
-        formula: Formula string starting with '='
+        formula: Formula string starting with '=' or '$'
         
     Returns:
         Tuple of (function_name, parameters)
     """
-    # Remove the leading '='
-    formula = formula[1:].strip()
+    # Remove the leading '=' or '$'
+    if formula.startswith('=') or formula.startswith('$'):
+        formula = formula[1:].strip()
     
     # Parse function name and parameters
     # Pattern: function_name(param1, param2, ...)
@@ -292,13 +298,14 @@ def _parse_function_call(formula: str) -> tuple:
     function_name = match.group(1)
     params_str = match.group(2)
     
-    # Parse parameters - handle quoted strings and nested commas
+    # Parse parameters - handle quoted strings, nested commas, and nested parentheses
     parameters = []
     if params_str.strip():
-        # Simple parameter parsing - split by comma but respect quotes
+        # Parameter parsing - split by comma but respect quotes and nested parentheses
         current_param = []
         in_quotes = False
         quote_char = None
+        paren_depth = 0
         
         for char in params_str:
             if char in ('"', "'") and not in_quotes:
@@ -307,7 +314,11 @@ def _parse_function_call(formula: str) -> tuple:
             elif char == quote_char and in_quotes:
                 in_quotes = False
                 quote_char = None
-            elif char == ',' and not in_quotes:
+            elif char == '(' and not in_quotes:
+                paren_depth += 1
+            elif char == ')' and not in_quotes:
+                paren_depth -= 1
+            elif char == ',' and not in_quotes and paren_depth == 0:
                 param = ''.join(current_param).strip()
                 if param:
                     # Remove quotes if present
@@ -570,17 +581,15 @@ def evaluate_formula(
     if not isinstance(formula, str):
         return formula
     
-    # Check if it's a function call
-    if formula.startswith('='):
+    # Check if it's a function call (starts with = or $)
+    if formula.startswith('=') or (formula.startswith('$') and '(' in formula):
         function_name, parameters = _parse_function_call(formula)
         if function_name:
-            # Resolve parameters (they may contain placeholders)
+            # Resolve parameters recursively (they may contain placeholders or nested functions)
             resolved_params = []
             for param in parameters:
-                if param.startswith('$'):
-                    resolved_params.append(_resolve_placeholder(param, file_path, frontmatter, content))
-                else:
-                    resolved_params.append(param)
+                # Recursively evaluate each parameter
+                resolved_params.append(evaluate_formula(param, file_path, frontmatter, content))
             
             return _execute_function(function_name, resolved_params)
         else:

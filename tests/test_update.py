@@ -1210,6 +1210,51 @@ This is a test document.""")
         self.assertTrue(results[0]['changes_made'])
         expected_path = os.path.join(os.path.dirname(self.test_file1), 'output', 'data.json')
         self.assertEqual(results[0]['new_value'], expected_path)
+    
+    def test_dollar_prefix_function_call(self):
+        """Test function calls with $ prefix (v0.23.0)."""
+        # Test $concat function at the beginning
+        result = _execute_function('concat', ['hello', ' ', 'world'])
+        self.assertEqual(result, 'hello world')
+        
+        # Test with evaluate_formula
+        from fmu.update import evaluate_formula
+        result = evaluate_formula('$concat(hello, world)', self.test_file1, {}, '')
+        self.assertEqual(result, 'helloworld')
+    
+    def test_nested_function_calls(self):
+        """Test nested function calls with $ prefix (v0.23.0)."""
+        from fmu.update import evaluate_formula
+        
+        # Test nested function: path with concat inside
+        result = evaluate_formula('=path($folderpath, $concat(output, .txt))', self.test_file1, {}, '')
+        expected = os.path.join(os.path.dirname(self.test_file1), 'output.txt')
+        self.assertEqual(result, expected)
+        
+        # Test nested function: concat with trim inside
+        result = evaluate_formula('$concat($trim(  hello  ), $trim(  world  ))', self.test_file1, {}, '')
+        self.assertEqual(result, 'helloworld')
+    
+    def test_compute_with_dollar_prefix_function(self):
+        """Test compute operation with $ prefix function call (v0.23.0)."""
+        # Create a test file with URL
+        operations = [{'type': 'compute', 'formula': '$basename($frontmatter.url)'}]
+        results = update_frontmatter([self.test_file1], 'slug', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'original-url')
+    
+    def test_compute_with_nested_dollar_functions(self):
+        """Test compute operation with nested $ prefix functions (v0.23.0)."""
+        # Test path with nested concat
+        operations = [{'type': 'compute', 'formula': '=path($folderpath, $concat(test, .json))'}]
+        results = update_frontmatter([self.test_file1], 'output_file', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        expected = os.path.join(os.path.dirname(self.test_file1), 'test.json')
+        self.assertEqual(results[0]['new_value'], expected)
 
 
 if __name__ == '__main__':

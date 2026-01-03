@@ -114,23 +114,26 @@ The `--map KEY VALUE` option supports three types of values:
    - `$frontmatter.fieldname[N]`: Array element access
    - Example: `--map path '$filepath'`, `--map title '$frontmatter.title'`, `--map folder '$foldername'`
 
-3. **Functions**: Built-in functions with `=` prefix
-   - `=now()`: Current timestamp in ISO format
-   - `=list()`: Empty list
-   - `=hash(string, length)`: Generate hash of specified length
-   - `=concat(str1, str2, ...)`: Concatenate strings
-   - `=slice(list, start)`: Slice list from start
-   - `=slice(list, start, stop)`: Slice list from start to stop
-   - `=slice(list, start, stop, step)`: Slice with step
-   - `=coalesce(val1, val2, ...)`: Return first non-empty value
-   - `=basename(file_path)`: Get base name without extension *(New in v0.23.0)*
-   - `=ltrim(str)`: Trim left whitespace *(New in v0.23.0)*
-   - `=rtrim(str)`: Trim right whitespace *(New in v0.23.0)*
-   - `=trim(str)`: Trim both sides whitespace *(New in v0.23.0)*
-   - `=truncate(string, max_length)`: Truncate to max length *(New in v0.23.0)*
-   - `=wtruncate(string, max_length, suffix)`: Truncate at word boundary with suffix *(New in v0.23.0)*
-   - `=path(segment1, segment2, ...)`: Form path using OS-appropriate separator *(New in v0.23.0)*
-   - Example: `--map timestamp '=now()'`, `--map id '=hash($filepath, 10)'`, `--map slug '=basename($frontmatter.url)'`, `--map output '=path($folderpath, output, data.json)'`
+3. **Functions**: Built-in functions with `=` or `$` prefix *($ prefix added in v0.23.0)*
+   - Functions can be called with `=` at the beginning: `=now()`, `=concat(...)`
+   - Functions can also be called with `$` prefix: `$now()`, `$concat(...)`
+   - `$` prefix allows nesting: `=path($folderpath, $concat(output, .json))`
+   - `=now()` / `$now()`: Current timestamp in ISO format
+   - `=list()` / `$list()`: Empty list
+   - `=hash(string, length)` / `$hash(...)`: Generate hash of specified length
+   - `=concat(str1, str2, ...)` / `$concat(...)`: Concatenate strings
+   - `=slice(list, start)` / `$slice(...)`: Slice list from start
+   - `=slice(list, start, stop)` / `$slice(...)`: Slice list from start to stop
+   - `=slice(list, start, stop, step)` / `$slice(...)`: Slice with step
+   - `=coalesce(val1, val2, ...)` / `$coalesce(...)`: Return first non-empty value
+   - `=basename(file_path)` / `$basename(...)`: Get base name without extension *(New in v0.23.0)*
+   - `=ltrim(str)` / `$ltrim(...)`: Trim left whitespace *(New in v0.23.0)*
+   - `=rtrim(str)` / `$rtrim(...)`: Trim right whitespace *(New in v0.23.0)*
+   - `=trim(str)` / `$trim(...)`: Trim both sides whitespace *(New in v0.23.0)*
+   - `=truncate(string, max_length)` / `$truncate(...)`: Truncate to max length *(New in v0.23.0)*
+   - `=wtruncate(string, max_length, suffix)` / `$wtruncate(...)`: Truncate at word boundary with suffix *(New in v0.23.0)*
+   - `=path(segment1, segment2, ...)` / `$path(...)`: Form path using OS-appropriate separator *(New in v0.23.0)*
+   - Example: `--map timestamp '=now()'`, `--map concat '$concat($frontmatter.title, .txt)'`, `--map nested '=path($folderpath, $concat(output, .json))'`
 
 **Escape Option:**
 When `--escape` is used, the following characters are escaped:
