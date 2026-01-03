@@ -46,7 +46,7 @@ This is test content.""")
     def test_cmd_version(self):
         """Test version command."""
         output = self.capture_output(cmd_version)
-        self.assertIn('0.22.0', output)
+        self.assertIn('0.23.0', output)
     
     def test_cmd_help(self):
         """Test help command."""
@@ -254,7 +254,7 @@ Line two""")
     def test_main_version(self):
         """Test main function with version command."""
         output = self.capture_output(main)
-        self.assertIn('0.22.0', output)
+        self.assertIn('0.23.0', output)
     
     @patch('sys.argv', ['fmu', 'help'])
     def test_main_help(self):
@@ -766,6 +766,116 @@ Test content.""")
         self.assertIsInstance(data['published'], bool)
         self.assertIsInstance(data['draft'], bool)
         self.assertIsInstance(data['rating'], int)
+    
+    def test_cmd_read_template_with_folderpath(self):
+        """Test read command with template using $folderpath (v0.23.0)."""
+        template = '{ "folder": "$folderpath" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        expected_folder = os.path.dirname(self.test_file)
+        self.assertIn(f'"folder": "{expected_folder}"', output)
+    
+    def test_cmd_read_template_with_foldername(self):
+        """Test read command with template using $foldername (v0.23.0)."""
+        template = '{ "folder": "$foldername" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        expected_foldername = os.path.basename(os.path.dirname(self.test_file))
+        self.assertIn(f'"folder": "{expected_foldername}"', output)
+    
+    def test_cmd_read_json_with_folderpath_placeholder(self):
+        """Test read command with JSON output using $folderpath placeholder (v0.23.0)."""
+        import json
+        map_items = [('folder', '$folderpath')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        expected_folder = os.path.dirname(self.test_file)
+        self.assertEqual(data['folder'], expected_folder)
+    
+    def test_cmd_read_json_with_basename_function(self):
+        """Test read command with JSON output using =basename() function (v0.23.0)."""
+        import json
+        map_items = [('name', '=basename($filepath)')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['name'], 'test')
+    
+    def test_cmd_read_json_with_trim_function(self):
+        """Test read command with JSON output using =trim() function (v0.23.0)."""
+        import json
+        map_items = [('trimmed', '=trim(  hello world  )')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['trimmed'], 'hello world')
+    
+    def test_cmd_read_json_with_truncate_function(self):
+        """Test read command with JSON output using =truncate() function (v0.23.0)."""
+        import json
+        map_items = [('short', '=truncate($frontmatter.title, 4)')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['short'], 'Test')
+    
+    def test_cmd_read_json_with_wtruncate_function(self):
+        """Test read command with JSON output using =wtruncate() function (v0.23.0)."""
+        import json
+        map_items = [('short', '=wtruncate($frontmatter.title, 8, ...)')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['short'], 'Test...')
+    
+    def test_cmd_read_json_with_path_function(self):
+        """Test read command with JSON output using =path() function (v0.23.0)."""
+        import json
+        map_items = [('output_path', '=path($folderpath, output, data.json)')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        expected = os.path.join(os.path.dirname(self.test_file), 'output', 'data.json')
+        self.assertEqual(data['output_path'], expected)
+    
+    def test_cmd_read_json_with_dollar_prefix_function(self):
+        """Test read command with JSON output using $ prefix function (v0.23.0)."""
+        import json
+        # Test simple concat with $ prefix
+        map_items = [('result', '$concat($frontmatter.title, $frontmatter.author)')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['result'], 'Test PostTest Author')
+    
+    def test_cmd_read_json_with_nested_dollar_functions(self):
+        """Test read command with JSON output using nested $ prefix functions (v0.23.0)."""
+        import json
+        map_items = [('trimmed_concat', '$trim($concat(  , $frontmatter.title,  ))')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['trimmed_concat'], 'Test Post')
+    
+    def test_cmd_read_json_with_flat_list_function(self):
+        """Test read command with JSON output using =flat_list() function (v0.23.0)."""
+        import json
+        # Create a test file with tags
+        test_file_tags = os.path.join(self.temp_dir, 'test_tags.md')
+        with open(test_file_tags, 'w') as f:
+            f.write("""---
+title: Test Tags
+tags:
+  - python
+  - javascript
+---
+
+Test content.""")
+        
+        map_items = [('all_tags', '=flat_list(golang, $frontmatter.tags, rust)')]
+        output = self.capture_output(cmd_read, [test_file_tags], 'json', False, 'yaml', False, None, None, False, map_items)
+        
+        data = json.loads(output.strip())
+        self.assertEqual(data['all_tags'], ['golang', 'python', 'javascript', 'rust'])
 
 
 if __name__ == '__main__':

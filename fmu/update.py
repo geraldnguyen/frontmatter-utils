@@ -5,6 +5,7 @@ Update functionality for frontmatter fields.
 import re
 import csv
 import sys
+import os
 import hashlib
 import random
 import string
@@ -15,7 +16,7 @@ import yaml
 
 
 # Placeholder patterns that should be skipped by coalesce when unresolved
-UNRESOLVED_PLACEHOLDER_PATTERNS = ['$frontmatter.', '$filename', '$filepath', '$content']
+UNRESOLVED_PLACEHOLDER_PATTERNS = ['$frontmatter.', '$filename', '$filepath', '$content', '$folderpath', '$foldername']
 
 
 def _is_unresolved_placeholder(value: str) -> bool:
@@ -222,10 +223,10 @@ def deduplicate_array(value: Any) -> Any:
 
 def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str, Any], content: str) -> Any:
     """
-    Resolve a placeholder reference.
+    Resolve a placeholder reference or function call.
     
     Args:
-        placeholder: Placeholder string (e.g., "$filename", "$frontmatter.title")
+        placeholder: Placeholder string (e.g., "$filename", "$frontmatter.title", "$concat(...)")
         file_path: Full path to the file
         frontmatter: Frontmatter dictionary
         content: Content string
@@ -233,12 +234,19 @@ def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str
     Returns:
         Resolved value
     """
-    import os
+    # Check if it's a function call (starts with $ and contains parentheses)
+    if placeholder.startswith('$') and '(' in placeholder:
+        # This is a function call, use evaluate_formula to handle it
+        return evaluate_formula(placeholder, file_path, frontmatter, content)
     
     if placeholder == '$filename':
         return os.path.basename(file_path)
     elif placeholder == '$filepath':
         return file_path
+    elif placeholder == '$folderpath':
+        return os.path.dirname(file_path)
+    elif placeholder == '$foldername':
+        return os.path.basename(os.path.dirname(file_path))
     elif placeholder == '$content':
         return content
     elif placeholder.startswith('$frontmatter.'):
@@ -272,13 +280,14 @@ def _parse_function_call(formula: str) -> tuple:
     Parse a function call from a formula.
     
     Args:
-        formula: Formula string starting with '='
+        formula: Formula string starting with '=' or '$'
         
     Returns:
         Tuple of (function_name, parameters)
     """
-    # Remove the leading '='
-    formula = formula[1:].strip()
+    # Remove the leading '=' or '$'
+    if formula.startswith('=') or formula.startswith('$'):
+        formula = formula[1:].strip()
     
     # Parse function name and parameters
     # Pattern: function_name(param1, param2, ...)
@@ -289,13 +298,14 @@ def _parse_function_call(formula: str) -> tuple:
     function_name = match.group(1)
     params_str = match.group(2)
     
-    # Parse parameters - handle quoted strings and nested commas
+    # Parse parameters - handle quoted strings, nested commas, and nested parentheses
     parameters = []
     if params_str.strip():
-        # Simple parameter parsing - split by comma but respect quotes
+        # Parameter parsing - split by comma but respect quotes and nested parentheses
         current_param = []
         in_quotes = False
         quote_char = None
+        paren_depth = 0
         
         for char in params_str:
             if char in ('"', "'") and not in_quotes:
@@ -304,7 +314,11 @@ def _parse_function_call(formula: str) -> tuple:
             elif char == quote_char and in_quotes:
                 in_quotes = False
                 quote_char = None
-            elif char == ',' and not in_quotes:
+            elif char == '(' and not in_quotes:
+                paren_depth += 1
+            elif char == ')' and not in_quotes:
+                paren_depth -= 1
+            elif char == ',' and not in_quotes and paren_depth == 0:
                 param = ''.join(current_param).strip()
                 if param:
                     # Remove quotes if present
@@ -442,6 +456,120 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
         # If all parameters are nil/empty/blank, return None
         return None
     
+    elif function_name == 'basename':
+        # Return the base name (without extension) of the file path
+        if len(parameters) < 1:
+            raise ValueError("basename() requires 1 parameter: file_path")
+        
+        file_path = str(parameters[0])
+        # Get the base name and remove extension
+        base = os.path.basename(file_path)
+        # Remove extension
+        name_without_ext = os.path.splitext(base)[0]
+        return name_without_ext
+    
+    elif function_name == 'ltrim':
+        # Trim left whitespace from string
+        if len(parameters) < 1:
+            raise ValueError("ltrim() requires 1 parameter: string")
+        
+        string_to_trim = str(parameters[0])
+        return string_to_trim.lstrip()
+    
+    elif function_name == 'rtrim':
+        # Trim right whitespace from string
+        if len(parameters) < 1:
+            raise ValueError("rtrim() requires 1 parameter: string")
+        
+        string_to_trim = str(parameters[0])
+        return string_to_trim.rstrip()
+    
+    elif function_name == 'trim':
+        # Trim both left and right whitespace from string
+        if len(parameters) < 1:
+            raise ValueError("trim() requires 1 parameter: string")
+        
+        string_to_trim = str(parameters[0])
+        return string_to_trim.strip()
+    
+    elif function_name == 'truncate':
+        # Truncate string to max_length
+        if len(parameters) < 2:
+            raise ValueError("truncate() requires 2 parameters: string and max_length")
+        
+        string_to_truncate = str(parameters[0])
+        try:
+            max_length = int(parameters[1])
+        except (ValueError, TypeError):
+            raise ValueError("max_length must be an integer")
+        
+        if len(string_to_truncate) <= max_length:
+            return string_to_truncate
+        else:
+            return string_to_truncate[:max_length]
+    
+    elif function_name == 'wtruncate':
+        # Truncate string to word boundary with suffix
+        if len(parameters) < 3:
+            raise ValueError("wtruncate() requires 3 parameters: string, max_length, and suffix")
+        
+        string_to_truncate = str(parameters[0])
+        try:
+            max_length = int(parameters[1])
+        except (ValueError, TypeError):
+            raise ValueError("max_length must be an integer")
+        
+        suffix = str(parameters[2])
+        
+        # If string is already shorter than max_length, return as-is
+        if len(string_to_truncate) <= max_length:
+            return string_to_truncate
+        
+        # Calculate available space for actual content (max_length - suffix_length)
+        available_space = max_length - len(suffix)
+        
+        if available_space <= 0:
+            # If suffix is longer than max_length, just return truncated suffix
+            return suffix[:max_length]
+        
+        # Truncate to available space
+        truncated = string_to_truncate[:available_space]
+        
+        # Find the last word boundary (space)
+        last_space = truncated.rfind(' ')
+        
+        if last_space > 0:
+            # Truncate at word boundary
+            truncated = truncated[:last_space]
+        # If no space found, use the truncated string as-is
+        
+        return truncated + suffix
+    
+    elif function_name == 'path':
+        # Form a path from provided path segments using OS-appropriate separator
+        if len(parameters) < 1:
+            raise ValueError("path() requires at least 1 parameter: path segments")
+        
+        # Convert all parameters to strings and join with OS path separator
+        path_segments = [str(param) for param in parameters]
+        return os.path.join(*path_segments)
+    
+    elif function_name == 'flat_list':
+        # Flatten a list of elements, expanding any nested lists
+        if len(parameters) < 1:
+            raise ValueError("flat_list() requires at least 1 parameter: elements")
+        
+        result = []
+        for param in parameters:
+            if isinstance(param, list):
+                # If parameter is a list, add all its elements to result
+                result.extend(param)
+            else:
+                # If parameter is not a list, add it as-is
+                result.append(param)
+        
+        return result
+    
     else:
         raise ValueError(f"Unknown function: {function_name}")
 
@@ -469,17 +597,15 @@ def evaluate_formula(
     if not isinstance(formula, str):
         return formula
     
-    # Check if it's a function call
-    if formula.startswith('='):
+    # Check if it's a function call (starts with = or $)
+    if formula.startswith('=') or (formula.startswith('$') and '(' in formula):
         function_name, parameters = _parse_function_call(formula)
         if function_name:
-            # Resolve parameters (they may contain placeholders)
+            # Resolve parameters recursively (they may contain placeholders or nested functions)
             resolved_params = []
             for param in parameters:
-                if param.startswith('$'):
-                    resolved_params.append(_resolve_placeholder(param, file_path, frontmatter, content))
-                else:
-                    resolved_params.append(param)
+                # Recursively evaluate each parameter
+                resolved_params.append(evaluate_formula(param, file_path, frontmatter, content))
             
             return _execute_function(function_name, resolved_params)
         else:

@@ -255,18 +255,29 @@ commands:
 
 **Compute Formulas (v0.12.0):**
 - Literal values: `"1"`, `"2nd"`, `"any text"`
-- Placeholder references: `"$filename"`, `"$filepath"`, `"$content"`, `"$frontmatter.name"`, `"$frontmatter.name[index]"`
-- Function calls: `"=now()"`, `"=list()"`, `"=hash($frontmatter.url, 10)"`, `"=concat(/post/, $frontmatter.id)"`
+- Placeholder references: `"$filename"`, `"$filepath"`, `"$folderpath"`, `"$foldername"`, `"$content"`, `"$frontmatter.name"`, `"$frontmatter.name[index]"` *(folderpath/foldername added in v0.23.0)*
+- Function calls: `"=now()"`, `"$now()"`, `"=hash($frontmatter.url, 10)"`, `"=path($folderpath, $concat(output, .json))"` *($ prefix added in v0.23.0)*
+  - Functions can use `=` prefix (only at beginning) or `$` prefix (at beginning or nested)
+  - `$` prefix enables nested function calls
 
 **Built-in Functions:**
-- `now()`: Current datetime in ISO 8601 format
-- `list()`: Empty list
-- `hash(string, length)`: Fixed-length hash of string
-- `concat(str1, str2, ...)`: Concatenate strings
-- `slice(list, start)`: Slice list from start to end *(New in v0.13.0)*
-- `slice(list, start, stop)`: Slice list from start to stop (exclusive) *(New in v0.13.0)*
-- `slice(list, start, stop, step)`: Slice list with step interval *(New in v0.13.0)*
-- `coalesce(val1, val2, ...)`: Return first non-empty, non-blank value. Skips None, empty strings, whitespace, empty lists/dicts, unresolved placeholders. *(New in v0.18.0)*
+- All functions support both `=` and `$` prefix *($ prefix added in v0.23.0)*
+- `now()` / `$now()`: Current datetime in ISO 8601 format
+- `list()` / `$list()`: Empty list
+- `hash(string, length)` / `$hash(...)`: Fixed-length hash of string
+- `concat(str1, str2, ...)` / `$concat(...)`: Concatenate strings
+- `slice(list, start)` / `$slice(...)`: Slice list from start to end *(New in v0.13.0)*
+- `slice(list, start, stop)` / `$slice(...)`: Slice list from start to stop (exclusive) *(New in v0.13.0)*
+- `slice(list, start, stop, step)` / `$slice(...)`: Slice list with step interval *(New in v0.13.0)*
+- `coalesce(val1, val2, ...)` / `$coalesce(...)`: Return first non-empty, non-blank value. Skips None, empty strings, whitespace, empty lists/dicts, unresolved placeholders. *(New in v0.18.0)*
+- `basename(file_path)` / `$basename(...)`: Return base name without extension *(New in v0.23.0)*
+- `ltrim(str)` / `$ltrim(...)`: Trim left whitespace *(New in v0.23.0)*
+- `rtrim(str)` / `$rtrim(...)`: Trim right whitespace *(New in v0.23.0)*
+- `trim(str)` / `$trim(...)`: Trim both sides whitespace *(New in v0.23.0)*
+- `truncate(string, max_length)` / `$truncate(...)`: Truncate to max length *(New in v0.23.0)*
+- `wtruncate(string, max_length, suffix)` / `$wtruncate(...)`: Truncate at word boundary with suffix *(New in v0.23.0)*
+- `path(segment1, segment2, ...)` / `$path(...)`: Form path using OS-appropriate separator *(New in v0.23.0)*
+- `flat_list(element1, element2, ...)` / `$flat_list(...)`: Flatten elements into list, expanding nested lists *(New in v0.23.0)*
 
 ## Usage
 

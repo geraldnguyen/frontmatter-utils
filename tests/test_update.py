@@ -1021,5 +1021,296 @@ Content.""")
         self.assertNotIn('python', results[0]['new_value'])
 
 
+class TestVersion023Functions(unittest.TestCase):
+    """Test version 0.23.0 built-in variables and functions."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        # Create temporary directory
+        self.temp_dir = tempfile.mkdtemp()
+        
+        # Create test files
+        self.test_file1 = os.path.join(self.temp_dir, 'subfolder', 'test1.md')
+        os.makedirs(os.path.dirname(self.test_file1), exist_ok=True)
+        with open(self.test_file1, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test Document
+url: /posts/original-url.html
+---
+
+This is a test document.""")
+    
+    def tearDown(self):
+        """Clean up test environment."""
+        shutil.rmtree(self.temp_dir)
+    
+    def test_folderpath_placeholder(self):
+        """Test $folderpath placeholder."""
+        expected_folderpath = os.path.dirname(self.test_file1)
+        result = _resolve_placeholder('$folderpath', self.test_file1, {}, '')
+        self.assertEqual(result, expected_folderpath)
+    
+    def test_foldername_placeholder(self):
+        """Test $foldername placeholder."""
+        result = _resolve_placeholder('$foldername', self.test_file1, {}, '')
+        self.assertEqual(result, 'subfolder')
+    
+    def test_basename_function(self):
+        """Test basename() function."""
+        # Test with file path
+        result = _execute_function('basename', ['/path/to/file.txt'])
+        self.assertEqual(result, 'file')
+        
+        # Test with file path without extension
+        result = _execute_function('basename', ['/path/to/filename'])
+        self.assertEqual(result, 'filename')
+        
+        # Test with multiple dots
+        result = _execute_function('basename', ['/path/to/file.tar.gz'])
+        self.assertEqual(result, 'file.tar')
+    
+    def test_ltrim_function(self):
+        """Test ltrim() function."""
+        result = _execute_function('ltrim', ['  hello  '])
+        self.assertEqual(result, 'hello  ')
+        
+        result = _execute_function('ltrim', ['\t\nhello'])
+        self.assertEqual(result, 'hello')
+    
+    def test_rtrim_function(self):
+        """Test rtrim() function."""
+        result = _execute_function('rtrim', ['  hello  '])
+        self.assertEqual(result, '  hello')
+        
+        result = _execute_function('rtrim', ['hello\t\n'])
+        self.assertEqual(result, 'hello')
+    
+    def test_trim_function(self):
+        """Test trim() function."""
+        result = _execute_function('trim', ['  hello  '])
+        self.assertEqual(result, 'hello')
+        
+        result = _execute_function('trim', ['\t\nhello\t\n'])
+        self.assertEqual(result, 'hello')
+    
+    def test_truncate_function(self):
+        """Test truncate() function."""
+        # Test truncation
+        result = _execute_function('truncate', ['hello world', 5])
+        self.assertEqual(result, 'hello')
+        
+        # Test when string is shorter than max_length
+        result = _execute_function('truncate', ['hello', 10])
+        self.assertEqual(result, 'hello')
+        
+        # Test with exact length
+        result = _execute_function('truncate', ['hello', 5])
+        self.assertEqual(result, 'hello')
+    
+    def test_wtruncate_function(self):
+        """Test wtruncate() function."""
+        # Test word boundary truncation
+        result = _execute_function('wtruncate', ['hello world', 10, '...'])
+        self.assertEqual(result, 'hello...')
+        
+        # Test when string is shorter than max_length
+        result = _execute_function('wtruncate', ['hello', 10, '...'])
+        self.assertEqual(result, 'hello')
+        
+        # Test with no space in truncated part
+        result = _execute_function('wtruncate', ['helloworld', 5, '...'])
+        self.assertEqual(result, 'he...')
+        
+        # Test with longer text
+        result = _execute_function('wtruncate', ['The quick brown fox jumps', 15, '...'])
+        self.assertEqual(result, 'The quick...')
+    
+    def test_compute_with_folderpath(self):
+        """Test compute operation with $folderpath."""
+        operations = [{'type': 'compute', 'formula': '$folderpath'}]
+        results = update_frontmatter([self.test_file1], 'folder_path', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        expected_folderpath = os.path.dirname(self.test_file1)
+        self.assertEqual(results[0]['new_value'], expected_folderpath)
+    
+    def test_compute_with_foldername(self):
+        """Test compute operation with $foldername."""
+        operations = [{'type': 'compute', 'formula': '$foldername'}]
+        results = update_frontmatter([self.test_file1], 'folder_name', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'subfolder')
+    
+    def test_compute_with_basename_function(self):
+        """Test compute operation with basename() function."""
+        operations = [{'type': 'compute', 'formula': '=basename($frontmatter.url)'}]
+        results = update_frontmatter([self.test_file1], 'slug', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'original-url')
+    
+    def test_compute_with_trim_function(self):
+        """Test compute operation with trim() function."""
+        # First add a field with spaces
+        operations = [{'type': 'compute', 'formula': '  spaced title  '}]
+        results = update_frontmatter([self.test_file1], 'temp_title', operations, False)
+        
+        # Now trim it
+        operations = [{'type': 'compute', 'formula': '=trim($frontmatter.temp_title)'}]
+        results = update_frontmatter([self.test_file1], 'clean_title', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'spaced title')
+    
+    def test_compute_with_truncate_function(self):
+        """Test compute operation with truncate() function."""
+        operations = [{'type': 'compute', 'formula': '=truncate($frontmatter.title, 10)'}]
+        results = update_frontmatter([self.test_file1], 'short_title', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'Test Docum')
+    
+    def test_compute_with_wtruncate_function(self):
+        """Test compute operation with wtruncate() function."""
+        operations = [{'type': 'compute', 'formula': '=wtruncate($frontmatter.title, 10, ...)'}]
+        results = update_frontmatter([self.test_file1], 'short_title', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'Test...')
+    
+    def test_path_function(self):
+        """Test path() function."""
+        # Test with multiple path segments
+        result = _execute_function('path', ['home', 'user', 'documents'])
+        expected = os.path.join('home', 'user', 'documents')
+        self.assertEqual(result, expected)
+        
+        # Test with single segment
+        result = _execute_function('path', ['folder'])
+        self.assertEqual(result, 'folder')
+        
+        # Test with absolute path components
+        result = _execute_function('path', ['/home', 'user', 'file.txt'])
+        expected = os.path.join('/home', 'user', 'file.txt')
+        self.assertEqual(result, expected)
+    
+    def test_compute_with_path_function(self):
+        """Test compute operation with path() function."""
+        operations = [{'type': 'compute', 'formula': '=path($folderpath, output, data.json)'}]
+        results = update_frontmatter([self.test_file1], 'output_path', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        expected_path = os.path.join(os.path.dirname(self.test_file1), 'output', 'data.json')
+        self.assertEqual(results[0]['new_value'], expected_path)
+    
+    def test_dollar_prefix_function_call(self):
+        """Test function calls with $ prefix (v0.23.0)."""
+        # Test $concat function at the beginning
+        result = _execute_function('concat', ['hello', ' ', 'world'])
+        self.assertEqual(result, 'hello world')
+        
+        # Test with evaluate_formula
+        from fmu.update import evaluate_formula
+        result = evaluate_formula('$concat(hello, world)', self.test_file1, {}, '')
+        self.assertEqual(result, 'helloworld')
+    
+    def test_nested_function_calls(self):
+        """Test nested function calls with $ prefix (v0.23.0)."""
+        from fmu.update import evaluate_formula
+        
+        # Test nested function: path with concat inside
+        result = evaluate_formula('=path($folderpath, $concat(output, .txt))', self.test_file1, {}, '')
+        expected = os.path.join(os.path.dirname(self.test_file1), 'output.txt')
+        self.assertEqual(result, expected)
+        
+        # Test nested function: concat with trim inside
+        result = evaluate_formula('$concat($trim(  hello  ), $trim(  world  ))', self.test_file1, {}, '')
+        self.assertEqual(result, 'helloworld')
+    
+    def test_compute_with_dollar_prefix_function(self):
+        """Test compute operation with $ prefix function call (v0.23.0)."""
+        # Create a test file with URL
+        operations = [{'type': 'compute', 'formula': '$basename($frontmatter.url)'}]
+        results = update_frontmatter([self.test_file1], 'slug', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'original-url')
+    
+    def test_compute_with_nested_dollar_functions(self):
+        """Test compute operation with nested $ prefix functions (v0.23.0)."""
+        # Test path with nested concat
+        operations = [{'type': 'compute', 'formula': '=path($folderpath, $concat(test, .json))'}]
+        results = update_frontmatter([self.test_file1], 'output_file', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        expected = os.path.join(os.path.dirname(self.test_file1), 'test.json')
+        self.assertEqual(results[0]['new_value'], expected)
+    
+    def test_flat_list_function(self):
+        """Test flat_list() function (v0.23.0)."""
+        # Test with simple elements
+        result = _execute_function('flat_list', ['a', 'b', 'c'])
+        self.assertEqual(result, ['a', 'b', 'c'])
+        
+        # Test with list elements
+        result = _execute_function('flat_list', [['a', 'b'], 'c', ['d', 'e']])
+        self.assertEqual(result, ['a', 'b', 'c', 'd', 'e'])
+        
+        # Test with mixed types
+        result = _execute_function('flat_list', ['text', 1, [2, 3], 'more'])
+        self.assertEqual(result, ['text', 1, 2, 3, 'more'])
+        
+        # Test with single list
+        result = _execute_function('flat_list', [['x', 'y', 'z']])
+        self.assertEqual(result, ['x', 'y', 'z'])
+        
+        # Test with empty list
+        result = _execute_function('flat_list', [[], 'a', []])
+        self.assertEqual(result, ['a'])
+    
+    def test_compute_with_flat_list_function(self):
+        """Test compute operation with flat_list() function (v0.23.0)."""
+        # Create a file with tags
+        operations = [{'type': 'compute', 'formula': '=flat_list(new-tag, $frontmatter.url)'}]
+        results = update_frontmatter([self.test_file1], 'combined', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], ['new-tag', '/posts/original-url.html'])
+    
+    def test_compute_with_flat_list_and_slice(self):
+        """Test compute operation combining flat_list() with slice() (v0.23.0)."""
+        # First create a tags list
+        with open(self.test_file1, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test Document
+url: /posts/original-url.html
+tags:
+  - python
+  - javascript
+  - ruby
+---
+
+This is a test document.""")
+        
+        # Use flat_list to combine new tags with existing ones
+        operations = [{'type': 'compute', 'formula': '=flat_list(golang, $frontmatter.tags, rust)'}]
+        results = update_frontmatter([self.test_file1], 'all_tags', operations, False)
+        
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], ['golang', 'python', 'javascript', 'ruby', 'rust'])
+
+
 if __name__ == '__main__':
     unittest.main()

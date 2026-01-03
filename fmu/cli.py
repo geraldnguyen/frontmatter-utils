@@ -93,6 +93,14 @@ def _render_template(template: str, file_path: str, frontmatter: Dict[str, Any],
     # Replace $filepath
     result = result.replace('$filepath', file_path)
     
+    # Replace $folderpath
+    folderpath = os.path.dirname(file_path)
+    result = result.replace('$folderpath', folderpath)
+    
+    # Replace $foldername
+    foldername = os.path.basename(os.path.dirname(file_path))
+    result = result.replace('$foldername', foldername)
+    
     # Replace $content
     result = result.replace('$content', content)
     
@@ -532,7 +540,7 @@ def create_parser():
     )
     read_parser.add_argument(
         '--template',
-        help='Template string for output (required when --output is template). Supports: $filename, $filepath, $content, $frontmatter.name, $frontmatter.name[index]'
+        help='Template string for output (required when --output is template). Supports: $filename, $filepath, $folderpath, $foldername, $content, $frontmatter.name, $frontmatter.name[index]'
     )
     read_parser.add_argument(
         '--file',
@@ -548,7 +556,7 @@ def create_parser():
         action='append',
         nargs=2,
         metavar=('KEY', 'VALUE'),
-        help='Build a key-value map for JSON/YAML output. VALUE can be literals, placeholders ($filepath, $frontmatter.name), or functions (=now(), =list()). Can be used multiple times.'
+        help='Build a key-value map for JSON/YAML output. VALUE can be literals, placeholders ($filepath, $folderpath, $foldername, $frontmatter.name), or functions (=now(), =list(), =basename(), =trim(), =truncate(), =wtruncate(), =path(), =flat_list()). Can be used multiple times.'
     )
     read_parser.add_argument(
         '--pretty',

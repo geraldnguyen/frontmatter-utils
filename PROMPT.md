@@ -666,10 +666,18 @@ Implement the following built-in variables and functions, available for use in *
 
 - `$folderpath`: full path to folder
 - `$foldername`: folder name
+- `=path(string, string, ....)`: form a path from the provided path segnment, use the OS-appropriate path separator.
 - `=basename(file path)`: function, return the base name (without extension) of the file
 - `=ltrim(str)`, `=rtrim(str)`, and `=trim(str)`: functions, trim the left, right, and both left and right of the string
 - `=truncate(string, max_length)`: function, truncate the string up to the max_length
 - `=wtruncate(string, max_length, suffix)`: function, truncate the string to the word boundary, append the `suffix` afterward. Example `=wtruncate('hello world', 10, '...')` will return `'hello...'`. Because the whole string is longer than 10 characters, break by word boundary would result in the string `'hello'`, then append suffx `...`.
+- `=flat_list(element, element, ...)`: function, return a flattened list comprise of the elements provided, in the same order specified. If any element itself is a list, then the elements of that list are added to the resulting list.
+
+Enhance the placeholder processing to `$` prefix for function call.
+- The `=` prefix is still supported, can only be use at the begining of the expression e.g. `=coalesce($frontmatter.description, $frontmatter.summary)`
+- The `$` prefix can be used at the begining of the expression e.g. `$coalesce($frontmatter.description, $frontmatter.summary)` or nested in another expression e.g. `=path($folderpath, $concat($foldername, .mp4)`
+
+
 
 While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section
 

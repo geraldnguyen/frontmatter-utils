@@ -437,7 +437,7 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 **New Features (v0.12.0):**
 - **Compute Operations**: Calculate and set frontmatter values using formulas
 - **Placeholder References**: Access file metadata and other frontmatter fields
-- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce() for dynamic value generation
+- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce(), basename(), ltrim(), rtrim(), trim(), truncate(), wtruncate(), path(), flat_list() for dynamic value generation
 - **Auto-create Fields**: Compute operations can create frontmatter fields that don't exist
 - **List Append**: Automatically append computed values to existing list fields
 
@@ -445,8 +445,13 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 
 The update operations support compute formulas that can be:
 - **Literal values**: `1`, `2nd`, `just any text`
-- **Placeholder references**: `$filename`, `$filepath`, `$content`, `$frontmatter.name`, `$frontmatter.name[index]`
-- **Function calls**: `=function_name(param1, param2, ...)`
+- **Placeholder references**: `$filename`, `$filepath`, `$folderpath`, `$foldername`, `$content`, `$frontmatter.name`, `$frontmatter.name[index]`
+- **Function calls**: `=function_name(param1, param2, ...)` or `$function_name(param1, param2, ...)` *($ prefix added in v0.23.0)*
+  - The `=` prefix can only be used at the beginning of an expression
+  - The `$` prefix can be used at the beginning or nested within other expressions
+  - Example with `=`: `=concat($frontmatter.title, .txt)`
+  - Example with `$` at beginning: `$concat($frontmatter.title, .txt)`
+  - Example with nested `$`: `=path($folderpath, $concat(output, .json))`
 
 ### Built-in Compute Functions
 
@@ -562,10 +567,168 @@ operations = [{'type': 'compute', 'formula': '=coalesce($frontmatter.short_title
 results = update_frontmatter(['*.md'], 'display_title', operations, deduplication=False)
 ```
 
+#### `basename(file_path)` *(New in v0.23.0)*
+Return the base name of a file without its extension.
+
+**Parameters:**
+- `file_path`: File path string (can be a placeholder reference)
+
+**Returns:** Base filename without extension (e.g., `/path/to/file.txt` → `file`)
+
+**Example:**
+```python
+# Create slug from URL
+operations = [{'type': 'compute', 'formula': '=basename($frontmatter.url)'}]
+results = update_frontmatter(['*.md'], 'slug', operations, deduplication=False)
+```
+
+#### `ltrim(str)` *(New in v0.23.0)*
+Trim whitespace from the left side of a string.
+
+**Parameters:**
+- `str`: String to trim (can be a placeholder reference)
+
+**Returns:** String with left whitespace removed
+
+**Example:**
+```python
+operations = [{'type': 'compute', 'formula': '=ltrim($frontmatter.title)'}]
+results = update_frontmatter(['*.md'], 'title', operations, deduplication=False)
+```
+
+#### `rtrim(str)` *(New in v0.23.0)*
+Trim whitespace from the right side of a string.
+
+**Parameters:**
+- `str`: String to trim (can be a placeholder reference)
+
+**Returns:** String with right whitespace removed
+
+**Example:**
+```python
+operations = [{'type': 'compute', 'formula': '=rtrim($frontmatter.title)'}]
+results = update_frontmatter(['*.md'], 'title', operations, deduplication=False)
+```
+
+#### `trim(str)` *(New in v0.23.0)*
+Trim whitespace from both sides of a string.
+
+**Parameters:**
+- `str`: String to trim (can be a placeholder reference)
+
+**Returns:** String with leading and trailing whitespace removed
+
+**Example:**
+```python
+operations = [{'type': 'compute', 'formula': '=trim($frontmatter.title)'}]
+results = update_frontmatter(['*.md'], 'clean_title', operations, deduplication=False)
+```
+
+#### `truncate(string, max_length)` *(New in v0.23.0)*
+Truncate a string to the specified maximum length.
+
+**Parameters:**
+- `string`: String to truncate (can be a placeholder reference)
+- `max_length`: Maximum length of the resulting string
+
+**Returns:** Truncated string (or original if shorter than max_length)
+
+**Example:**
+```python
+# Truncate description to 100 characters
+operations = [{'type': 'compute', 'formula': '=truncate($frontmatter.description, 100)'}]
+results = update_frontmatter(['*.md'], 'short_desc', operations, deduplication=False)
+```
+
+#### `wtruncate(string, max_length, suffix)` *(New in v0.23.0)*
+Truncate a string at word boundary and append a suffix.
+
+**Parameters:**
+- `string`: String to truncate (can be a placeholder reference)
+- `max_length`: Maximum total length including suffix
+- `suffix`: String to append after truncation (e.g., `...`)
+
+**Returns:** Truncated string at word boundary with suffix appended
+
+**Behavior:**
+- Finds the last space before `max_length - suffix_length`
+- Truncates at that space
+- Appends the suffix
+- If no space found, truncates at character boundary
+
+**Example:**
+```python
+# Truncate description at word boundary with ellipsis
+operations = [{'type': 'compute', 'formula': '=wtruncate($frontmatter.description, 150, ...)'}]
+results = update_frontmatter(['*.md'], 'summary', operations, deduplication=False)
+
+# Example: "hello world" with max_length=10 and suffix="..." becomes "hello..."
+```
+
+#### `path(segment1, segment2, ...)` *(New in v0.23.0)*
+Form a file path from multiple path segments using the OS-appropriate path separator.
+
+**Parameters:**
+- `segment1, segment2, ...`: Path segments to join (can be placeholder references or literals)
+
+**Returns:** Complete path with OS-appropriate separators (e.g., `/` on Unix, `\` on Windows)
+
+**Behavior:**
+- Uses `os.path.join()` internally
+- Handles absolute and relative path segments correctly
+- Works with any number of segments
+
+**Examples:**
+```python
+# Create output path relative to current file's folder
+operations = [{'type': 'compute', 'formula': '=path($folderpath, output, data.json)'}]
+results = update_frontmatter(['*.md'], 'output_path', operations, deduplication=False)
+
+# Combine multiple segments
+operations = [{'type': 'compute', 'formula': '=path(/home, user, documents, file.txt)'}]
+results = update_frontmatter(['*.md'], 'backup_path', operations, deduplication=False)
+
+# Use with other placeholders
+operations = [{'type': 'compute', 'formula': '=path($folderpath, $foldername, output.json)'}]
+results = update_frontmatter(['*.md'], 'result_path', operations, deduplication=False)
+```
+
+#### `flat_list(element1, element2, ...)` *(New in v0.23.0)*
+Create a flattened list from multiple elements, expanding any nested lists.
+
+**Parameters:**
+- `element1, element2, ...`: Variable number of elements (can be any type, including lists)
+
+**Returns:** Flattened list containing all elements in order
+
+**Behavior:**
+- If an element is a list, its elements are added to the result list
+- If an element is not a list, it's added as-is to the result list
+- Elements are processed and added in the order specified
+- Useful for combining literal values with list fields
+
+**Examples:**
+```python
+# Combine literal values with list field
+operations = [{'type': 'compute', 'formula': '=flat_list(new-tag, $frontmatter.tags, extra-tag)'}]
+results = update_frontmatter(['*.md'], 'all_tags', operations, deduplication=False)
+
+# Combine multiple list fields
+operations = [{'type': 'compute', 'formula': '=flat_list($frontmatter.tags, $frontmatter.categories)'}]
+results = update_frontmatter(['*.md'], 'combined', operations, deduplication=False)
+
+# Mix literals and lists
+operations = [{'type': 'compute', 'formula': '=flat_list(header, [a, b, c], footer)'}]
+results = update_frontmatter(['*.md'], 'items', operations, deduplication=False)
+# Result: ['header', 'a', 'b', 'c', 'footer']
+```
+
 ### Placeholder References
 
 - `$filename`: Base filename (e.g., "post.md")
 - `$filepath`: Full file path
+- `$folderpath`: Full path to the folder containing the file *(New in v0.23.0)*
+- `$foldername`: Just the folder name without full path *(New in v0.23.0)*
 - `$content`: Content after frontmatter
 - `$frontmatter.fieldname`: Access frontmatter field (single value or array)
 - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
