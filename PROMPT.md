@@ -660,6 +660,19 @@ When output to file or console, if the `--output [json|yaml]` was specified, min
 While implement the requirements, remember to meet all instructions specified in the `# General requiremts`
 
 
+## Version 0.23.0 - Additional built-in variables and functions
+
+Implement the following built-in variables and functions, available for use in **all** commands inlcuding `read` and `update` commands
+
+- `$folderpath`: full path to folder
+- `$foldername`: folder name
+- `=basename(file path)`: function, return the base name (without extension) of the file
+- `=ltrim(str)`, `=rtrim(str)`, and `=trim(str)`: functions, trim the left, right, and both left and right of the string
+- `=truncate(string, max_length)`: function, truncate the string up to the max_length
+- `=wtruncate(string, max_length, suffix)`: function, truncate the string to the word boundary, append the `suffix` afterward. Example `=wtruncate('hello world', 10, '...')` will return `'hello...'`. Because the whole string is longer than 10 characters, break by word boundary would result in the string `'hello'`, then append suffx `...`.
+
+While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section
+
 
 # General requirements
 
