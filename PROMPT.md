@@ -666,6 +666,7 @@ Implement the following built-in variables and functions, available for use in *
 
 - `$folderpath`: full path to folder
 - `$foldername`: folder name
+- `=path(string, string, ....)`: form a path from the provided path segnment, use the OS-appropriate path separator.
 - `=basename(file path)`: function, return the base name (without extension) of the file
 - `=ltrim(str)`, `=rtrim(str)`, and `=trim(str)`: functions, trim the left, right, and both left and right of the string
 - `=truncate(string, max_length)`: function, truncate the string up to the max_length
