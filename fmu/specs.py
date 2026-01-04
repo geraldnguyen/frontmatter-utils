@@ -2,6 +2,7 @@
 Specs file handling functionality.
 """
 
+import copy
 import os
 import re
 import yaml
@@ -640,10 +641,10 @@ def execute_specs_file(
     
     # Override patterns if provided
     if patterns:
-        # Create copies of commands with overridden patterns to avoid mutation
+        # Create deep copies of commands with overridden patterns to avoid mutation
         commands_with_overrides = []
         for cmd in commands:
-            cmd_copy = cmd.copy()
+            cmd_copy = copy.deepcopy(cmd)
             cmd_copy['patterns'] = patterns
             commands_with_overrides.append(cmd_copy)
         commands = commands_with_overrides
