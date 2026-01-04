@@ -579,6 +579,25 @@ def execute_command(command_entry: Dict[str, Any]) -> int:
         return 1
 
 
+def _create_empty_stats():
+    """
+    Create an empty statistics dictionary for command execution.
+    
+    Returns:
+        Dictionary with initialized statistics
+    """
+    return {
+        'total_commands': 0,
+        'executed_commands': 0,
+        'failed_commands': 0,
+        'command_counts': {'read': 0, 'search': 0, 'validate': 0, 'update': 0},
+        'total_elapsed_time': 0,
+        'total_execution_time': 0,
+        'average_execution_time': 0,
+        'exit_code': 0
+    }
+
+
 def execute_specs_file(
     specs_file: str, 
     skip_confirmation: bool = False,
@@ -603,19 +622,6 @@ def execute_specs_file(
     specs_data = load_specs_file(specs_file)
     commands = specs_data.get('commands', [])
     
-    # Helper function to create empty stats
-    def _create_empty_stats():
-        return {
-            'total_commands': 0,
-            'executed_commands': 0,
-            'failed_commands': 0,
-            'command_counts': {'read': 0, 'search': 0, 'validate': 0, 'update': 0},
-            'total_elapsed_time': 0,
-            'total_execution_time': 0,
-            'average_execution_time': 0,
-            'exit_code': 0
-        }
-    
     # Filter commands by regex if provided
     if command_regex:
         try:
@@ -634,8 +640,13 @@ def execute_specs_file(
     
     # Override patterns if provided
     if patterns:
+        # Create copies of commands with overridden patterns to avoid mutation
+        commands_with_overrides = []
         for cmd in commands:
-            cmd['patterns'] = patterns
+            cmd_copy = cmd.copy()
+            cmd_copy['patterns'] = patterns
+            commands_with_overrides.append(cmd_copy)
+        commands = commands_with_overrides
     
     # Initialize statistics
     stats = _create_empty_stats()
