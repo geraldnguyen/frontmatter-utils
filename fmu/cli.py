@@ -473,7 +473,12 @@ def cmd_update(
     update_and_output(patterns, frontmatter_name, operations, deduplication, format_type)
 
 
-def cmd_execute(specs_file: str, skip_confirmation: bool = False, command_regex: str = None, patterns: List[str] = None) -> int:
+def cmd_execute(
+    specs_file: str,
+    skip_confirmation: bool = False,
+    command_regex: str = None,
+    patterns: List[str] = None
+) -> int:
     """
     Handle execute command.
     
@@ -489,7 +494,9 @@ def cmd_execute(specs_file: str, skip_confirmation: bool = False, command_regex:
     from .specs import execute_specs_file, print_execution_stats
     
     try:
-        exit_code, stats = execute_specs_file(specs_file, skip_confirmation, command_regex, patterns)
+        exit_code, stats = execute_specs_file(
+            specs_file, skip_confirmation, command_regex, patterns
+        )
         print_execution_stats(stats)
         return exit_code
     except FileNotFoundError as e:
