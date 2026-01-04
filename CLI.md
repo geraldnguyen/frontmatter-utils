@@ -499,7 +499,7 @@ Formulas can be:
 
 **Note:** Case transformations properly handle contractions (e.g., "can't" → "Can't", not "Can'T") as of v0.8.0.
 
-### `execute SPECS_FILE` *(New in v0.6.0, Enhanced in v0.15.0)*
+### `execute SPECS_FILE` *(New in v0.6.0, Enhanced in v0.15.0, v0.24.0)*
 Execute all commands stored in a specs file.
 
 **Arguments:**
@@ -507,6 +507,8 @@ Execute all commands stored in a specs file.
 
 **Options:**
 - `--yes`: Skip all confirmation prompts and execute all commands automatically
+- `--command <regex>`: *(New in v0.24.0)* Regex pattern to filter commands by description. Only commands whose description field matches the regex will be executed.
+- `--pattern <pattern>`: *(New in v0.24.0)* Override patterns for all matched commands. Can be specified multiple times to provide multiple patterns.
 
 **Examples:**
 ```bash
@@ -515,10 +517,27 @@ fmu execute commands.yaml
 
 # Execute commands without confirmation prompts
 fmu execute commands.yaml --yes
+
+# Execute only commands with "validation" in their description
+fmu execute commands.yaml --yes --command "validation"
+
+# Execute only commands matching "alpha" or "beta" in description
+fmu execute commands.yaml --yes --command "alpha|beta"
+
+# Execute all commands but override patterns to use only file1.md
+fmu execute commands.yaml --yes --pattern file1.md
+
+# Execute all commands but override patterns with multiple files
+fmu execute commands.yaml --yes --pattern file1.md --pattern file2.md
+
+# Combine command filtering and pattern override
+fmu execute commands.yaml --yes --command "production" --pattern "prod/*.md"
 ```
 
 **Behavior:**
 - Commands are executed sequentially in the order they appear in the specs file
+- **Command Filtering (v0.24.0):** If `--command` is provided, only commands whose description matches the regex are executed
+- **Pattern Override (v0.24.0):** If `--pattern` is provided, all matched commands use these patterns instead of their original patterns
 - Before each command, displays: `------------\n[command text]\n------------\n`
 - Without `--yes`, prompts: `Proceed with the above command? Answer yes or no`
 - **Exit Code Handling (v0.15.0):**
@@ -535,6 +554,7 @@ fmu execute commands.yaml --yes
 **Note:** 
 - Each command in the specs file can specify its own output destination (console or file via `--file` option), allowing for flexible output workflows.
 - Exit codes enable use in CI/CD pipelines and scripts that check for command success/failure.
+- The `--command` and `--pattern` options allow for flexible command execution without modifying the specs file.
 
 ## Output Formats
 

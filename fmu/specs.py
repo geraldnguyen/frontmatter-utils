@@ -2,7 +2,9 @@
 Specs file handling functionality.
 """
 
+import copy
 import os
+import re
 import yaml
 import time
 from typing import Dict, Any, List, Tuple
@@ -577,9 +579,30 @@ def execute_command(command_entry: Dict[str, Any]) -> int:
         return 1
 
 
+def _create_empty_stats():
+    """
+    Create an empty statistics dictionary for command execution.
+    
+    Returns:
+        Dictionary with initialized statistics
+    """
+    return {
+        'total_commands': 0,
+        'executed_commands': 0,
+        'failed_commands': 0,
+        'command_counts': {'read': 0, 'search': 0, 'validate': 0, 'update': 0},
+        'total_elapsed_time': 0,
+        'total_execution_time': 0,
+        'average_execution_time': 0,
+        'exit_code': 0
+    }
+
+
 def execute_specs_file(
     specs_file: str, 
-    skip_confirmation: bool = False
+    skip_confirmation: bool = False,
+    command_regex: str = None,
+    patterns: List[str] = None
 ) -> Tuple[int, Dict[str, Any]]:
     """
     Execute all commands from a specs file.
@@ -587,6 +610,8 @@ def execute_specs_file(
     Args:
         specs_file: Path to the specs file
         skip_confirmation: Whether to skip user confirmation for each command
+        command_regex: Optional regex to filter commands by description
+        patterns: Optional list of patterns to override in commands
         
     Returns:
         Tuple of (exit_code, statistics_dict)
@@ -597,17 +622,35 @@ def execute_specs_file(
     specs_data = load_specs_file(specs_file)
     commands = specs_data.get('commands', [])
     
+    # Filter commands by regex if provided
+    if command_regex:
+        try:
+            pattern = re.compile(command_regex)
+            filtered_commands = []
+            for cmd in commands:
+                description = cmd.get('description', '')
+                if pattern.search(description):
+                    filtered_commands.append(cmd)
+            commands = filtered_commands
+        except re.error as e:
+            print(f"Error: Invalid regex pattern: {e}")
+            stats = _create_empty_stats()
+            stats['exit_code'] = 1
+            return 1, stats
+    
+    # Override patterns if provided
+    if patterns:
+        # Create deep copies of commands with overridden patterns to avoid mutation
+        commands_with_overrides = []
+        for cmd in commands:
+            cmd_copy = copy.deepcopy(cmd)
+            cmd_copy['patterns'] = patterns
+            commands_with_overrides.append(cmd_copy)
+        commands = commands_with_overrides
+    
     # Initialize statistics
-    stats = {
-        'total_commands': len(commands),
-        'executed_commands': 0,
-        'failed_commands': 0,
-        'command_counts': {'read': 0, 'search': 0, 'validate': 0, 'update': 0},
-        'total_elapsed_time': 0,
-        'total_execution_time': 0,
-        'average_execution_time': 0,
-        'exit_code': 0
-    }
+    stats = _create_empty_stats()
+    stats['total_commands'] = len(commands)
     
     if not commands:
         print("No commands found in specs file.")

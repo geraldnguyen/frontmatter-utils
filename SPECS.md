@@ -358,6 +358,25 @@ fmu execute specs.yaml
 fmu execute specs.yaml --yes
 ```
 
+### Advanced Usage (v0.24.0)
+
+```bash
+# Execute only commands matching a regex pattern in their description
+fmu execute specs.yaml --yes --command "validation"
+
+# Execute only commands with "alpha" or "beta" in description
+fmu execute specs.yaml --yes --command "alpha|beta"
+
+# Override patterns for all commands
+fmu execute specs.yaml --yes --pattern "*.md"
+
+# Override patterns with multiple files
+fmu execute specs.yaml --yes --pattern file1.md --pattern file2.md
+
+# Combine command filtering and pattern override
+fmu execute specs.yaml --yes --command "production" --pattern "prod/*.md"
+```
+
 ### Execution Behavior
 
 **Command Execution:**
@@ -365,6 +384,17 @@ fmu execute specs.yaml --yes
 - Before each command, displays the formatted command text
 - Without `--yes`, prompts for confirmation: `Proceed with the above command? Answer yes or no`
 - Each command's output is displayed as it executes
+
+**Command Filtering (v0.24.0):**
+- `--command <regex>`: Filters commands by matching their description field with the provided regex
+- Only commands whose description matches the regex are executed
+- Invalid regex patterns are caught and reported with error messages
+
+**Pattern Override (v0.24.0):**
+- `--pattern <pattern>`: Overrides the patterns in all matched commands
+- Can be specified multiple times to provide multiple patterns
+- Applies to all commands (or filtered commands if `--command` is also used)
+- Useful for testing commands on different file sets without modifying the specs file
 
 **Exit Code Handling (v0.15.0):**
 - If any command returns a non-zero exit code, execution stops immediately
