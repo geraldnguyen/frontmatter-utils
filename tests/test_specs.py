@@ -693,6 +693,184 @@ class TestSpecsFunctionality(unittest.TestCase):
         
         self.assertIn('aliases:', content)
 
+    def test_execute_with_command_regex_filter(self):
+        """Test execute command with --command regex filter (version 0.24.0)."""
+        # Create test markdown files
+        test_md1 = os.path.join(self.test_dir, 'test1.md')
+        with open(test_md1, 'w') as f:
+            f.write('---\ntitle: Test 1\n---\nContent 1')
+        
+        test_md2 = os.path.join(self.test_dir, 'test2.md')
+        with open(test_md2, 'w') as f:
+            f.write('---\ntitle: Test 2\n---\nContent 2')
+        
+        # Create specs file with multiple commands
+        specs_data = {
+            'commands': [
+                {
+                    'command': 'read',
+                    'description': 'read first file',
+                    'patterns': [test_md1],
+                    'output': 'frontmatter'
+                },
+                {
+                    'command': 'read',
+                    'description': 'read second file',
+                    'patterns': [test_md2],
+                    'output': 'frontmatter'
+                },
+                {
+                    'command': 'read',
+                    'description': 'read all files',
+                    'patterns': [os.path.join(self.test_dir, '*.md')],
+                    'output': 'content'
+                }
+            ]
+        }
+        
+        with open(self.specs_file, 'w') as f:
+            yaml.dump(specs_data, f)
+        
+        # Execute with regex to match only "first" and "second" (not "all")
+        exit_code, stats = execute_specs_file(
+            self.specs_file, 
+            skip_confirmation=True,
+            command_regex='(first|second)'
+        )
+        
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stats['executed_commands'], 2)  # Only 2 commands should match
+        self.assertEqual(stats['command_counts']['read'], 2)
+
+    def test_execute_with_pattern_override(self):
+        """Test execute command with --pattern override (version 0.24.0)."""
+        # Create test markdown files
+        test_md1 = os.path.join(self.test_dir, 'test1.md')
+        with open(test_md1, 'w') as f:
+            f.write('---\ntitle: Test 1\n---\nContent 1')
+        
+        test_md2 = os.path.join(self.test_dir, 'test2.md')
+        with open(test_md2, 'w') as f:
+            f.write('---\ntitle: Test 2\n---\nContent 2')
+        
+        # Create specs file with commands using original patterns
+        specs_data = {
+            'commands': [
+                {
+                    'command': 'read',
+                    'description': 'read files',
+                    'patterns': ['nonexistent.md'],  # This won't match anything
+                    'output': 'frontmatter'
+                }
+            ]
+        }
+        
+        with open(self.specs_file, 'w') as f:
+            yaml.dump(specs_data, f)
+        
+        # Execute with pattern override
+        output = StringIO()
+        with patch('sys.stdout', output):
+            exit_code, stats = execute_specs_file(
+                self.specs_file, 
+                skip_confirmation=True,
+                patterns=[test_md1, test_md2]
+            )
+        
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stats['executed_commands'], 1)
+        
+        # Verify that the override patterns were used
+        output_str = output.getvalue()
+        self.assertIn('title: Test 1', output_str)
+        self.assertIn('title: Test 2', output_str)
+
+    def test_execute_with_both_command_and_pattern(self):
+        """Test execute command with both --command and --pattern (version 0.24.0)."""
+        # Create test markdown files
+        test_md1 = os.path.join(self.test_dir, 'test1.md')
+        with open(test_md1, 'w') as f:
+            f.write('---\ntitle: Test 1\ntags: [alpha]\n---\nContent 1')
+        
+        test_md2 = os.path.join(self.test_dir, 'test2.md')
+        with open(test_md2, 'w') as f:
+            f.write('---\ntitle: Test 2\ntags: [beta]\n---\nContent 2')
+        
+        # Create specs file with multiple commands
+        specs_data = {
+            'commands': [
+                {
+                    'command': 'read',
+                    'description': 'read alpha files',
+                    'patterns': ['wrong.md'],
+                    'output': 'frontmatter'
+                },
+                {
+                    'command': 'read',
+                    'description': 'read beta files',
+                    'patterns': ['wrong.md'],
+                    'output': 'frontmatter'
+                },
+                {
+                    'command': 'read',
+                    'description': 'read all content',
+                    'patterns': ['wrong.md'],
+                    'output': 'content'
+                }
+            ]
+        }
+        
+        with open(self.specs_file, 'w') as f:
+            yaml.dump(specs_data, f)
+        
+        # Execute with command filter AND pattern override
+        output = StringIO()
+        with patch('sys.stdout', output):
+            exit_code, stats = execute_specs_file(
+                self.specs_file, 
+                skip_confirmation=True,
+                command_regex='alpha|beta',  # Exclude "all content"
+                patterns=[test_md1, test_md2]  # Override patterns
+            )
+        
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(stats['executed_commands'], 2)  # Only alpha and beta commands
+        
+        # Verify the correct patterns were used
+        output_str = output.getvalue()
+        self.assertIn('title: Test 1', output_str)
+        self.assertIn('title: Test 2', output_str)
+
+    def test_execute_with_invalid_regex(self):
+        """Test execute command with invalid regex (version 0.24.0)."""
+        # Create specs file with a command
+        specs_data = {
+            'commands': [
+                {
+                    'command': 'read',
+                    'description': 'test command',
+                    'patterns': ['*.md'],
+                    'output': 'frontmatter'
+                }
+            ]
+        }
+        
+        with open(self.specs_file, 'w') as f:
+            yaml.dump(specs_data, f)
+        
+        # Execute with invalid regex
+        output = StringIO()
+        with patch('sys.stdout', output):
+            exit_code, stats = execute_specs_file(
+                self.specs_file, 
+                skip_confirmation=True,
+                command_regex='[invalid'  # Invalid regex
+            )
+        
+        self.assertEqual(exit_code, 1)
+        output_str = output.getvalue()
+        self.assertIn('Error: Invalid regex pattern', output_str)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -579,7 +579,9 @@ def execute_command(command_entry: Dict[str, Any]) -> int:
 
 def execute_specs_file(
     specs_file: str, 
-    skip_confirmation: bool = False
+    skip_confirmation: bool = False,
+    command_regex: str = None,
+    patterns: List[str] = None
 ) -> Tuple[int, Dict[str, Any]]:
     """
     Execute all commands from a specs file.
@@ -587,15 +589,41 @@ def execute_specs_file(
     Args:
         specs_file: Path to the specs file
         skip_confirmation: Whether to skip user confirmation for each command
+        command_regex: Optional regex to filter commands by description
+        patterns: Optional list of patterns to override in commands
         
     Returns:
         Tuple of (exit_code, statistics_dict)
         - exit_code: 0 if all commands succeeded, non-zero if any command failed
         - statistics_dict: Dictionary containing execution statistics
     """
+    import re
+    
     # Load specs file
     specs_data = load_specs_file(specs_file)
     commands = specs_data.get('commands', [])
+    
+    # Filter commands by regex if provided
+    if command_regex:
+        try:
+            pattern = re.compile(command_regex)
+            filtered_commands = []
+            for cmd in commands:
+                description = cmd.get('description', '')
+                if pattern.search(description):
+                    filtered_commands.append(cmd)
+            commands = filtered_commands
+        except re.error as e:
+            print(f"Error: Invalid regex pattern: {e}")
+            return 1, {'total_commands': 0, 'executed_commands': 0, 'failed_commands': 0, 
+                      'command_counts': {'read': 0, 'search': 0, 'validate': 0, 'update': 0},
+                      'total_elapsed_time': 0, 'total_execution_time': 0, 
+                      'average_execution_time': 0, 'exit_code': 1}
+    
+    # Override patterns if provided
+    if patterns:
+        for cmd in commands:
+            cmd['patterns'] = patterns
     
     # Initialize statistics
     stats = {

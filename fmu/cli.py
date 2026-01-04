@@ -473,13 +473,15 @@ def cmd_update(
     update_and_output(patterns, frontmatter_name, operations, deduplication, format_type)
 
 
-def cmd_execute(specs_file: str, skip_confirmation: bool = False) -> int:
+def cmd_execute(specs_file: str, skip_confirmation: bool = False, command_regex: str = None, patterns: List[str] = None) -> int:
     """
     Handle execute command.
     
     Args:
         specs_file: Path to the specs file
         skip_confirmation: Whether to skip user confirmation
+        command_regex: Optional regex to filter commands by description
+        patterns: Optional list of patterns to override in commands
         
     Returns:
         Exit code from execution (0 for success, non-zero for failure)
@@ -487,7 +489,7 @@ def cmd_execute(specs_file: str, skip_confirmation: bool = False) -> int:
     from .specs import execute_specs_file, print_execution_stats
     
     try:
-        exit_code, stats = execute_specs_file(specs_file, skip_confirmation)
+        exit_code, stats = execute_specs_file(specs_file, skip_confirmation, command_regex, patterns)
         print_execution_stats(stats)
         return exit_code
     except FileNotFoundError as e:
@@ -696,6 +698,17 @@ def create_parser():
         action='store_true',
         help='Skip all confirmations and execute all commands'
     )
+    execute_parser.add_argument(
+        '--command',
+        type=str,
+        dest='command_regex',
+        help='Regex pattern to filter commands by description'
+    )
+    execute_parser.add_argument(
+        '--pattern',
+        action='append',
+        help='Override patterns for commands (can be specified multiple times)'
+    )
     
     return parser
 
@@ -879,7 +892,9 @@ def main():
     elif args.command == 'execute':
         exit_code = cmd_execute(
             specs_file=args.specs_file,
-            skip_confirmation=args.yes
+            skip_confirmation=args.yes,
+            command_regex=args.command_regex if hasattr(args, 'command_regex') and args.command_regex else None,
+            patterns=args.pattern if hasattr(args, 'pattern') and args.pattern else None
         )
         sys.exit(exit_code)
     elif args.command is None:
