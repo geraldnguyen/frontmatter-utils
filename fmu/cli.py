@@ -893,8 +893,8 @@ def main():
         exit_code = cmd_execute(
             specs_file=args.specs_file,
             skip_confirmation=args.yes,
-            command_regex=args.command_regex if hasattr(args, 'command_regex') and args.command_regex else None,
-            patterns=args.pattern if hasattr(args, 'pattern') and args.pattern else None
+            command_regex=args.command_regex,
+            patterns=args.pattern
         )
         sys.exit(exit_code)
     elif args.command is None:

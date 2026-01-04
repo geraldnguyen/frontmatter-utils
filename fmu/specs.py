@@ -3,9 +3,11 @@ Specs file handling functionality.
 """
 
 import os
+import re
 import yaml
 import time
 from typing import Dict, Any, List, Tuple
+
 
 
 def save_specs_file(
@@ -597,11 +599,22 @@ def execute_specs_file(
         - exit_code: 0 if all commands succeeded, non-zero if any command failed
         - statistics_dict: Dictionary containing execution statistics
     """
-    import re
-    
     # Load specs file
     specs_data = load_specs_file(specs_file)
     commands = specs_data.get('commands', [])
+    
+    # Helper function to create empty stats
+    def _create_empty_stats():
+        return {
+            'total_commands': 0,
+            'executed_commands': 0,
+            'failed_commands': 0,
+            'command_counts': {'read': 0, 'search': 0, 'validate': 0, 'update': 0},
+            'total_elapsed_time': 0,
+            'total_execution_time': 0,
+            'average_execution_time': 0,
+            'exit_code': 0
+        }
     
     # Filter commands by regex if provided
     if command_regex:
@@ -615,10 +628,9 @@ def execute_specs_file(
             commands = filtered_commands
         except re.error as e:
             print(f"Error: Invalid regex pattern: {e}")
-            return 1, {'total_commands': 0, 'executed_commands': 0, 'failed_commands': 0, 
-                      'command_counts': {'read': 0, 'search': 0, 'validate': 0, 'update': 0},
-                      'total_elapsed_time': 0, 'total_execution_time': 0, 
-                      'average_execution_time': 0, 'exit_code': 1}
+            stats = _create_empty_stats()
+            stats['exit_code'] = 1
+            return 1, stats
     
     # Override patterns if provided
     if patterns:
@@ -626,16 +638,8 @@ def execute_specs_file(
             cmd['patterns'] = patterns
     
     # Initialize statistics
-    stats = {
-        'total_commands': len(commands),
-        'executed_commands': 0,
-        'failed_commands': 0,
-        'command_counts': {'read': 0, 'search': 0, 'validate': 0, 'update': 0},
-        'total_elapsed_time': 0,
-        'total_execution_time': 0,
-        'average_execution_time': 0,
-        'exit_code': 0
-    }
+    stats = _create_empty_stats()
+    stats['total_commands'] = len(commands)
     
     if not commands:
         print("No commands found in specs file.")
