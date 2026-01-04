@@ -317,6 +317,35 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
 
 ## Changelog
 
+### Version 0.24.0
+
+- **Execute Command Enhancements**
+  - Added `--command <regex>` option to filter commands by description
+    - Filters spec file commands whose description matches the provided regex pattern
+    - Allows selective execution of commands without modifying the spec file
+    - Example: `fmu execute specs.yaml --command "alpha|beta"` executes only commands with "alpha" or "beta" in description
+  - Added `--pattern <pattern>` option to override patterns in commands
+    - Can be specified multiple times to provide multiple patterns
+    - Overrides the patterns in all matched commands from the spec file
+    - Works with both original and filtered command sets
+    - Example: `fmu execute specs.yaml --pattern "*.md" --pattern "docs/*.txt"`
+  - Both options can be combined for powerful command filtering and pattern override
+    - Example: `fmu execute specs.yaml --command "validation" --pattern "production/*.md"`
+  - Invalid regex patterns are caught and reported with descriptive error messages
+
+- **Library API Updates**
+  - `execute_specs_file()` function signature updated to accept optional `command_regex` and `patterns` parameters
+  - `cmd_execute()` function signature updated to accept optional `command_regex` and `patterns` parameters
+  - Both functions maintain backward compatibility with existing code
+
+- **Testing**
+  - Added 4 comprehensive unit tests covering:
+    - Command filtering by regex
+    - Pattern override functionality
+    - Combined command filtering and pattern override
+    - Invalid regex error handling
+  - All 281 tests passing (277 previous tests + 4 new tests)
+
 ### Version 0.23.0
 
 - **New Built-in Variables**

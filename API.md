@@ -873,12 +873,14 @@ for cmd in commands:
     print(f"Command: {cmd['command']}, Description: {cmd['description']}")
 ```
 
-### `execute_specs_file(specs_file, skip_confirmation=False)` *(New in v0.6.0, Enhanced in v0.15.0)*
+### `execute_specs_file(specs_file, skip_confirmation=False, command_regex=None, patterns=None)` *(New in v0.6.0, Enhanced in v0.15.0, v0.24.0)*
 Execute all commands from a specs file.
 
 **Parameters:**
 - `specs_file` (str): Path to specs file
 - `skip_confirmation` (bool): Whether to skip user confirmation prompts (default: False)
+- `command_regex` (str): *(New in v0.24.0)* Optional regex pattern to filter commands by description (default: None)
+- `patterns` (List[str]): *(New in v0.24.0)* Optional list of patterns to override in commands (default: None)
 
 **Returns:**
 - `Tuple[int, Dict[str, Any]]`: Exit code and execution statistics
@@ -897,11 +899,35 @@ print_execution_stats(stats)
 exit_code, stats = execute_specs_file('commands.yaml', skip_confirmation=True)
 if exit_code != 0:
     print(f"Execution failed with exit code {exit_code}")
+
+# Execute only commands matching a regex (v0.24.0)
+exit_code, stats = execute_specs_file(
+    'commands.yaml', 
+    skip_confirmation=True,
+    command_regex='validation.*'
+)
+
+# Execute with pattern override (v0.24.0)
+exit_code, stats = execute_specs_file(
+    'commands.yaml',
+    skip_confirmation=True,
+    patterns=['file1.md', 'file2.md']
+)
+
+# Combine filtering and pattern override (v0.24.0)
+exit_code, stats = execute_specs_file(
+    'commands.yaml',
+    skip_confirmation=True,
+    command_regex='production',
+    patterns=['prod/*.md']
+)
 ```
 
-**Behavior (v0.15.0):**
+**Behavior:**
 - Commands are executed sequentially
-- If any command returns a non-zero exit code, execution stops immediately and returns that exit code
+- **(v0.24.0)** If `command_regex` is provided, only commands whose description matches the regex are executed
+- **(v0.24.0)** If `patterns` is provided, all matched commands use these patterns instead of their original patterns
+- **(v0.15.0)** If any command returns a non-zero exit code, execution stops immediately and returns that exit code
 - If a command returns 0, execution continues to the next command
 - Enables use in CI/CD pipelines and automation scripts
 
