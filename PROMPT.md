@@ -677,10 +677,16 @@ Enhance the placeholder processing to `$` prefix for function call.
 - The `=` prefix is still supported, can only be use at the begining of the expression e.g. `=coalesce($frontmatter.description, $frontmatter.summary)`
 - The `$` prefix can be used at the begining of the expression e.g. `$coalesce($frontmatter.description, $frontmatter.summary)` or nested in another expression e.g. `=path($folderpath, $concat($foldername, .mp4)`
 
-
-
 While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section
 
+
+## Version 0.24.0 - Enhancement to the `execute` command:
+
+1. Support `--command <regex>` option to execute only commands in the spec file whose `description` field matches the regex. All current and future options in the `execute` command apply to the matched command.
+
+2. Support `--pattern <pattern>` option (can appear multiple time) to override the pattern in each to-be-executed commands from the spec files. The to-be-executed commands can be all the commands in the spec file, or a subset of commands due to the filtering effect of another `--command <regex>` option. 
+
+While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section
 
 # General requirements
 
