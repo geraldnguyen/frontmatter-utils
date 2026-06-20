@@ -394,6 +394,15 @@ Content here.""")
         self.assertEqual(len(params), 2)
         self.assertEqual(params[0], '/post/')
         self.assertEqual(params[1], '$frontmatter.id')
+
+    def test_parse_function_call_concat_with_newline_escape(self):
+        """Test parsing concat() with quoted newline escape sequence."""
+        func_name, params = _parse_function_call("=concat('a', '\\n', 'b')")
+        self.assertEqual(func_name, 'concat')
+        self.assertEqual(len(params), 3)
+        self.assertEqual(params[0], 'a')
+        self.assertEqual(params[1], '\n')
+        self.assertEqual(params[2], 'b')
     
     def test_execute_function_now(self):
         """Test executing now() function."""
@@ -420,6 +429,11 @@ Content here.""")
         """Test executing concat() function."""
         result = _execute_function('concat', ['/post/', 'abc123'])
         self.assertEqual(result, '/post/abc123')
+
+    def test_execute_function_concat_with_newline(self):
+        """Test concat() keeps newline character instead of escaped text."""
+        result = _execute_function('concat', ['a', '\n', 'b'])
+        self.assertEqual(result, 'a\nb')
     
     def test_evaluate_formula_literal(self):
         """Test evaluating literal formula."""
@@ -1526,6 +1540,71 @@ Content.""")
         self.assertEqual(len(results), 1)
         self.assertTrue(results[0]['changes_made'])
         self.assertEqual(results[0]['new_value'], '#python')
+
+    # =========================================================================
+    # Version 0.26.0: Case functions + concat newline handling
+    # =========================================================================
+
+    def test_execute_function_upper(self):
+        """Test upper() case function."""
+        result = _execute_function('upper', ['hello world'])
+        self.assertEqual(result, 'HELLO WORLD')
+
+    def test_execute_function_lower(self):
+        """Test lower() case function."""
+        result = _execute_function('lower', ['Hello World'])
+        self.assertEqual(result, 'hello world')
+
+    def test_execute_function_sentence_case(self):
+        """Test sentenceCase() case function."""
+        result = _execute_function('sentenceCase', ['hello world'])
+        self.assertEqual(result, 'Hello world')
+
+    def test_execute_function_title_case(self):
+        """Test titleCase() case function."""
+        result = _execute_function('titleCase', ["can't stop"]) 
+        self.assertEqual(result, "Can't Stop")
+
+    def test_execute_function_snake_case(self):
+        """Test snakeCase() case function."""
+        result = _execute_function('snakeCase', ['Hello World'])
+        self.assertEqual(result, 'hello_world')
+
+    def test_execute_function_kebab_case(self):
+        """Test kebabCase() case function."""
+        result = _execute_function('kebabCase', ['Hello World'])
+        self.assertEqual(result, 'hello-world')
+
+    def test_evaluate_formula_case_functions(self):
+        """Test case functions in evaluate_formula()."""
+        self.assertEqual(evaluate_formula('=upper(hello)', '/test/file.md', {}, ''), 'HELLO')
+        self.assertEqual(evaluate_formula('=lower(HELLO)', '/test/file.md', {}, ''), 'hello')
+        self.assertEqual(evaluate_formula('=sentenceCase(hello world)', '/test/file.md', {}, ''), 'Hello world')
+        self.assertEqual(evaluate_formula('=titleCase(hello world)', '/test/file.md', {}, ''), 'Hello World')
+        self.assertEqual(evaluate_formula('=snakeCase(Hello World)', '/test/file.md', {}, ''), 'hello_world')
+        self.assertEqual(evaluate_formula('=kebabCase(Hello World)', '/test/file.md', {}, ''), 'hello-world')
+
+    def test_compute_case_function_updates_frontmatter(self):
+        """Test compute operation with case function updates frontmatter."""
+        test_file = os.path.join(self.temp_dir, 'case_compute_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+author: jane smith
+---
+
+Content.""")
+
+        operations = [{'type': 'compute', 'formula': '=titleCase($frontmatter.author)'}]
+        results = update_frontmatter([test_file], 'author', operations, False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], 'Jane Smith')
+
+    def test_evaluate_formula_concat_with_newline_escape(self):
+        """Test concat() with '\\n' produces an actual newline."""
+        result = evaluate_formula("=concat('a', '\\n', 'b')", '/test/file.md', {}, '')
+        self.assertEqual(result, 'a\nb')
 
 
 if __name__ == '__main__':

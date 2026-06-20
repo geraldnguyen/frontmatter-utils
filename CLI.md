@@ -497,6 +497,22 @@ Formulas can be:
 - `join(array, delimiter, max_length)`: Join elements stopping before the result exceeds `max_length` *(New in v0.25.0)*
   - If adding the next element would exceed `max_length`, stops and returns the current string
   - Example: `=join($frontmatter.tags, ' ', 10)` → `'python'` (if `'python testing'` would exceed 10 chars)
+- `upper(arg)`: Transform value to UPPERCASE *(New in v0.26.0)*
+  - Example: `=upper($frontmatter.title)`
+- `lower(arg)`: Transform value to lowercase *(New in v0.26.0)*
+  - Example: `=lower($frontmatter.title)`
+- `sentenceCase(arg)`: Transform value to Sentence case *(New in v0.26.0)*
+  - Example: `=sentenceCase($frontmatter.title)`
+- `titleCase(arg)`: Transform value to Title Case *(New in v0.26.0)*
+  - Example: `=titleCase($frontmatter.title)`
+- `snakeCase(arg)`: Transform value to snake_case *(New in v0.26.0)*
+  - Example: `=snakeCase($frontmatter.title)`
+- `kebabCase(arg)`: Transform value to kebab-case *(New in v0.26.0)*
+  - Example: `=kebabCase($frontmatter.title)`
+
+**Concat Escape Note (v0.26.0):**
+- Quoted escape sequences are interpreted in function parameters.
+- Example: `=concat('a', '\n', 'b')` returns text with an actual newline between `a` and `b`.
 
 **Compute Behavior:**
 - If the frontmatter field **does not exist**, it will be **created** with the computed value

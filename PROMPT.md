@@ -700,6 +700,20 @@ Examples:
 - `join($foreach($frontmatters.countries, concat('#', $element), ' '): Map the `countries` array front matter into one string e.g. `#country1 #country2`
 - `join($foreach($frontmatters.countries, concat('#', $element), ' ', 10): Map the `countries` array front matter into one string  as long as that string has less than 10 characters e.g. `#country1`
 
+
+## Version 0.26.0 - expose case operations as function + Retain newline `\n` in `concat` function
+
+Expose the following case operation as function:
+- `upper`: UPPERCASE -> `upper(arg)`
+- `lower`: lowercase -> `lower(arg)`
+- `Sentence case`: Sentence case (first letter capitalized) -> `sentenceCase(arg)`
+- `Title Case`: Title Case (capitalize each word) -> `titleCase(arg)`
+- `snake_case`: snake_case (lowercase with underscores) -> `snakeCase(arg)`
+- `kebab-case`: kebab-case (lowercase with hyphens) -> `kebabCase(arg)`
+
+Do not escape newline string `\n` in `concat` function e.g. `concat('a', '\n', 'b')` will result in `a\nb` instead of `a\\nb`
+
+
 **General requirements**
 
 - For every new command, new option introduced or modified or removed, ensure the specs file is updated to support and reflect the changes. For example, the specs must support the new `--compute <value>` option of "update" command, the new validation rules of the "validate" commands etc...`

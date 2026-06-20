@@ -317,6 +317,21 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
 
 ## Changelog
 
+### Version 0.26.0
+
+- **Case Operations Exposed As Compute Functions**
+  - Added `upper(arg)` / `$upper(...)`: UPPERCASE transformation
+  - Added `lower(arg)` / `$lower(...)`: lowercase transformation
+  - Added `sentenceCase(arg)` / `$sentenceCase(...)`: Sentence case transformation
+  - Added `titleCase(arg)` / `$titleCase(...)`: Title Case transformation
+  - Added `snakeCase(arg)` / `$snakeCase(...)`: snake_case transformation
+  - Added `kebabCase(arg)` / `$kebabCase(...)`: kebab-case transformation
+  - These functions are available in compute formulas for `update` and for any feature using formula evaluation
+
+- **`concat` Newline Handling**
+  - Quoted newline escape sequences are now interpreted as actual newlines in function parameters
+  - Example: `=concat('a', '\n', 'b')` now returns a two-line string (`a` then `b`) instead of the literal characters `\\n`
+
 ### Version 0.25.0
 
 - **New List Functions and `$element` Placeholder**

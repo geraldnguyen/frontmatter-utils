@@ -437,7 +437,7 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 **New Features (v0.12.0):**
 - **Compute Operations**: Calculate and set frontmatter values using formulas
 - **Placeholder References**: Access file metadata and other frontmatter fields
-- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce(), basename(), ltrim(), rtrim(), trim(), truncate(), wtruncate(), path(), flat_list(), foreach(), join() for dynamic value generation
+- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce(), basename(), ltrim(), rtrim(), trim(), truncate(), wtruncate(), path(), flat_list(), foreach(), join(), upper(), lower(), sentenceCase(), titleCase(), snakeCase(), kebabCase() for dynamic value generation
 - **Auto-create Fields**: Compute operations can create frontmatter fields that don't exist
 - **List Append**: Automatically append computed values to existing list fields
 
@@ -770,6 +770,36 @@ results = update_frontmatter(['*.md'], 'tag_string', operations, deduplication=F
 operations = [{'type': 'compute', 'formula': "=join($frontmatter.tags, ' ', 10)"}]
 results = update_frontmatter(['*.md'], 'short_tags', operations, deduplication=False)
 # Only includes elements that keep the result <= 10 chars
+```
+
+#### Case Functions *(New in v0.26.0)*
+
+- `upper(arg)`: Convert to UPPERCASE
+- `lower(arg)`: Convert to lowercase
+- `sentenceCase(arg)`: Convert to Sentence case
+- `titleCase(arg)`: Convert to Title Case
+- `snakeCase(arg)`: Convert to snake_case
+- `kebabCase(arg)`: Convert to kebab-case
+
+These functions map directly to the same case transformations supported by the `--case` update option.
+
+**Examples:**
+```python
+operations = [{'type': 'compute', 'formula': '=upper($frontmatter.title)'}]
+results = update_frontmatter(['*.md'], 'title_upper', operations, deduplication=False)
+
+operations = [{'type': 'compute', 'formula': '=snakeCase($frontmatter.title)'}]
+results = update_frontmatter(['*.md'], 'slug', operations, deduplication=False)
+```
+
+#### Concat Escape Handling *(Updated in v0.26.0)*
+
+Quoted escape sequences are interpreted in function parameters.
+
+**Example:**
+```python
+result = evaluate_formula("=concat('a', '\\n', 'b')", '/tmp/test.md', {}, '')
+# result contains an actual newline between 'a' and 'b'
 ```
 
 ### Placeholder References

@@ -284,6 +284,15 @@ commands:
 - `join(array, delimiter)` / `join(array, delimiter, max_length)`: Join array elements into a string *(New in v0.25.0)*
   - With `max_length`: stops adding elements before the result would exceed the limit
   - Example: `=join($foreach($frontmatter.tags, concat('#', $element)), ' ')` → `'#python #testing'`
+- `upper(arg)` / `$upper(...)`: Convert to UPPERCASE *(New in v0.26.0)*
+- `lower(arg)` / `$lower(...)`: Convert to lowercase *(New in v0.26.0)*
+- `sentenceCase(arg)` / `$sentenceCase(...)`: Convert to Sentence case *(New in v0.26.0)*
+- `titleCase(arg)` / `$titleCase(...)`: Convert to Title Case *(New in v0.26.0)*
+- `snakeCase(arg)` / `$snakeCase(...)`: Convert to snake_case *(New in v0.26.0)*
+- `kebabCase(arg)` / `$kebabCase(...)`: Convert to kebab-case *(New in v0.26.0)*
+
+**Concat escape handling (v0.26.0):** quoted escape sequences are interpreted in function parameters.
+- Example: `=concat('a', '\n', 'b')` produces text with an actual newline between `a` and `b`.
 
 ## Usage
 

@@ -281,6 +281,38 @@ def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str
     return placeholder
 
 
+def _unescape_quoted_string(value: str) -> str:
+    """Unescape common escaped characters in quoted function parameters."""
+    result = []
+    i = 0
+    while i < len(value):
+        if value[i] == '\\' and i + 1 < len(value):
+            next_char = value[i + 1]
+            if next_char == 'n':
+                result.append('\n')
+            elif next_char == 'r':
+                result.append('\r')
+            elif next_char == 't':
+                result.append('\t')
+            elif next_char == '\\':
+                result.append('\\')
+            elif next_char == "'":
+                result.append("'")
+            elif next_char == '"':
+                result.append('"')
+            else:
+                # Preserve unknown escape sequences as-is.
+                result.append('\\')
+                result.append(next_char)
+            i += 2
+            continue
+
+        result.append(value[i])
+        i += 1
+
+    return ''.join(result)
+
+
 def _parse_function_call(formula: str) -> tuple:
     """
     Parse a function call from a formula.
@@ -330,7 +362,7 @@ def _parse_function_call(formula: str) -> tuple:
                     # Remove quotes if present
                     if (param.startswith('"') and param.endswith('"')) or \
                        (param.startswith("'") and param.endswith("'")):
-                        param = param[1:-1]
+                        param = _unescape_quoted_string(param[1:-1])
                     parameters.append(param)
                 current_param = []
                 continue
@@ -343,7 +375,7 @@ def _parse_function_call(formula: str) -> tuple:
             # Remove quotes if present
             if (param.startswith('"') and param.endswith('"')) or \
                (param.startswith("'") and param.endswith("'")):
-                param = param[1:-1]
+                param = _unescape_quoted_string(param[1:-1])
             parameters.append(param)
     
     return function_name, parameters
@@ -393,6 +425,36 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
     elif function_name == 'concat':
         # Concatenate all parameters
         return ''.join(str(param) for param in parameters)
+
+    elif function_name == 'upper':
+        if len(parameters) < 1:
+            raise ValueError("upper() requires 1 parameter")
+        return apply_case_transformation(parameters[0], 'upper')
+
+    elif function_name == 'lower':
+        if len(parameters) < 1:
+            raise ValueError("lower() requires 1 parameter")
+        return apply_case_transformation(parameters[0], 'lower')
+
+    elif function_name == 'sentenceCase':
+        if len(parameters) < 1:
+            raise ValueError("sentenceCase() requires 1 parameter")
+        return apply_case_transformation(parameters[0], 'Sentence case')
+
+    elif function_name == 'titleCase':
+        if len(parameters) < 1:
+            raise ValueError("titleCase() requires 1 parameter")
+        return apply_case_transformation(parameters[0], 'Title Case')
+
+    elif function_name == 'snakeCase':
+        if len(parameters) < 1:
+            raise ValueError("snakeCase() requires 1 parameter")
+        return apply_case_transformation(parameters[0], 'snake_case')
+
+    elif function_name == 'kebabCase':
+        if len(parameters) < 1:
+            raise ValueError("kebabCase() requires 1 parameter")
+        return apply_case_transformation(parameters[0], 'kebab-case')
     
     elif function_name == 'slice':
         # Slice a list with Python-like slicing semantics
