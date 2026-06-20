@@ -437,7 +437,7 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 **New Features (v0.12.0):**
 - **Compute Operations**: Calculate and set frontmatter values using formulas
 - **Placeholder References**: Access file metadata and other frontmatter fields
-- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce(), basename(), ltrim(), rtrim(), trim(), truncate(), wtruncate(), path(), flat_list() for dynamic value generation
+- **Built-in Functions**: now(), list(), hash(), concat(), slice(), coalesce(), basename(), ltrim(), rtrim(), trim(), truncate(), wtruncate(), path(), flat_list(), foreach(), join() for dynamic value generation
 - **Auto-create Fields**: Compute operations can create frontmatter fields that don't exist
 - **List Append**: Automatically append computed values to existing list fields
 
@@ -723,6 +723,55 @@ results = update_frontmatter(['*.md'], 'items', operations, deduplication=False)
 # Result: ['header', 'a', 'b', 'c', 'footer']
 ```
 
+#### `foreach(array, expression)` *(New in v0.25.0)*
+Map each element of an array through an expression, returning a new array.
+
+**Parameters:**
+- `array`: A list value, typically from `$frontmatter.fieldname` or `$frontmatters.fieldname`
+- `expression`: Expression evaluated for each element; use `$element` to reference the current element
+
+**Returns:** New list with each element transformed by the expression
+
+**Notes:**
+- The expression can be a bare function call (e.g., `concat('#', $element)`) without `=`/`$` prefix
+- `$element` is only valid inside the `foreach` expression
+
+**Examples:**
+```python
+# Map tags to hashtag strings
+operations = [{'type': 'compute', 'formula': "=foreach($frontmatter.tags, concat('#', $element))"}]
+results = update_frontmatter(['*.md'], 'hashtags', operations, deduplication=False)
+# Input tags: ['python', 'testing'] → hashtags: ['#python', '#testing']
+
+# Combined with join to produce a single string
+operations = [{'type': 'compute', 'formula': "=join($foreach($frontmatter.tags, concat('#', $element)), ' ')"}]
+results = update_frontmatter(['*.md'], 'hashtag_string', operations, deduplication=False)
+# Result: '#python #testing'
+```
+
+#### `join(array, delimiter)` / `join(array, delimiter, max_length)` *(New in v0.25.0)*
+Join array elements into a single string with a delimiter.
+
+**Parameters:**
+- `array`: A list of elements
+- `delimiter`: String to use between elements
+- `max_length` (optional): Maximum length of the resulting string; stops adding elements if it would exceed this
+
+**Returns:** Joined string
+
+**Examples:**
+```python
+# Join all tags with space
+operations = [{'type': 'compute', 'formula': "=join($frontmatter.tags, ' ')"}]
+results = update_frontmatter(['*.md'], 'tag_string', operations, deduplication=False)
+# Input tags: ['python', 'testing'] → tag_string: 'python testing'
+
+# Join with max_length
+operations = [{'type': 'compute', 'formula': "=join($frontmatter.tags, ' ', 10)"}]
+results = update_frontmatter(['*.md'], 'short_tags', operations, deduplication=False)
+# Only includes elements that keep the result <= 10 chars
+```
+
 ### Placeholder References
 
 - `$filename`: Base filename (e.g., "post.md")
@@ -732,6 +781,8 @@ results = update_frontmatter(['*.md'], 'items', operations, deduplication=False)
 - `$content`: Content after frontmatter
 - `$frontmatter.fieldname`: Access frontmatter field (single value or array)
 - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
+- `$frontmatters.fieldname`: Alias for `$frontmatter.fieldname` (plural form) *(New in v0.25.0)*
+- `$element`: Current element inside a `foreach` expression *(New in v0.25.0)*
 
 ### Compute Operation Behavior
 

@@ -16,7 +16,7 @@ import yaml
 
 
 # Placeholder patterns that should be skipped by coalesce when unresolved
-UNRESOLVED_PLACEHOLDER_PATTERNS = ['$frontmatter.', '$filename', '$filepath', '$content', '$folderpath', '$foldername']
+UNRESOLVED_PLACEHOLDER_PATTERNS = ['$frontmatter.', '$frontmatters.', '$filename', '$filepath', '$content', '$folderpath', '$foldername', '$element']
 
 
 def _is_unresolved_placeholder(value: str) -> bool:
@@ -221,7 +221,7 @@ def deduplicate_array(value: Any) -> Any:
         return value
 
 
-def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str, Any], content: str) -> Any:
+def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str, Any], content: str, element_context: Any = None) -> Any:
     """
     Resolve a placeholder reference or function call.
     
@@ -230,6 +230,7 @@ def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str
         file_path: Full path to the file
         frontmatter: Frontmatter dictionary
         content: Content string
+        element_context: Current element value when inside a foreach loop
         
     Returns:
         Resolved value
@@ -237,9 +238,13 @@ def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str
     # Check if it's a function call (starts with $ and contains parentheses)
     if placeholder.startswith('$') and '(' in placeholder:
         # This is a function call, use evaluate_formula to handle it
-        return evaluate_formula(placeholder, file_path, frontmatter, content)
+        return evaluate_formula(placeholder, file_path, frontmatter, content, element_context)
     
-    if placeholder == '$filename':
+    if placeholder == '$element':
+        if element_context is not None:
+            return element_context
+        return placeholder  # unresolved
+    elif placeholder == '$filename':
         return os.path.basename(file_path)
     elif placeholder == '$filepath':
         return file_path
@@ -249,9 +254,10 @@ def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str
         return os.path.basename(os.path.dirname(file_path))
     elif placeholder == '$content':
         return content
-    elif placeholder.startswith('$frontmatter.'):
+    elif placeholder.startswith('$frontmatter.') or placeholder.startswith('$frontmatters.'):
         # Extract field name and optional index
-        pattern = r'\$frontmatter\.([a-zA-Z_][a-zA-Z0-9_]*)(?:\[(\d+)\])?'
+        # Support both $frontmatter.name (singular) and $frontmatters.name (plural)
+        pattern = r'\$frontmatters?\.([a-zA-Z_][a-zA-Z0-9_]*)(?:\[(\d+)\])?'
         match = re.match(pattern, placeholder)
         if match:
             field_name = match.group(1)
@@ -570,6 +576,46 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
         
         return result
     
+    elif function_name == 'join':
+        # Join array elements into a string
+        if len(parameters) < 2:
+            raise ValueError("join() requires at least 2 parameters: array and delimiter")
+        
+        input_array = parameters[0]
+        delimiter = str(parameters[1])
+        
+        # If the input is not a list, treat it as a single-element list
+        if not isinstance(input_array, list):
+            input_array = [input_array]
+        
+        max_length = None
+        if len(parameters) >= 3:
+            try:
+                max_length = int(parameters[2])
+            except (ValueError, TypeError):
+                raise ValueError("max_length must be an integer")
+        
+        if max_length is None:
+            return delimiter.join(str(e) for e in input_array)
+        else:
+            # Join elements as long as the resulting string <= max_length
+            result_parts = []
+            current_length = 0
+            for i, element in enumerate(input_array):
+                elem_str = str(element)
+                if i == 0:
+                    new_length = len(elem_str)
+                else:
+                    new_length = current_length + len(delimiter) + len(elem_str)
+                
+                if new_length > max_length:
+                    break
+                
+                result_parts.append(elem_str)
+                current_length = new_length
+            
+            return delimiter.join(result_parts)
+    
     else:
         raise ValueError(f"Unknown function: {function_name}")
 
@@ -578,7 +624,8 @@ def evaluate_formula(
     formula: Any,
     file_path: str,
     frontmatter: Dict[str, Any],
-    content: str
+    content: str,
+    element_context: Any = None
 ) -> Any:
     """
     Evaluate a compute formula.
@@ -589,6 +636,7 @@ def evaluate_formula(
         file_path: Full path to the file
         frontmatter: Frontmatter dictionary
         content: Content string
+        element_context: Current element value when inside a foreach loop ($element)
         
     Returns:
         Evaluated result
@@ -597,15 +645,33 @@ def evaluate_formula(
     if not isinstance(formula, str):
         return formula
     
-    # Check if it's a function call (starts with = or $)
-    if formula.startswith('=') or (formula.startswith('$') and '(' in formula):
-        function_name, parameters = _parse_function_call(formula)
+    # Check if it's a function call (starts with = or $, or is a bare function call like func_name(...))
+    _bare_func_pattern = re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*\(', formula)
+    if formula.startswith('=') or (formula.startswith('$') and '(' in formula) or _bare_func_pattern:
+        # Normalize bare function calls to use = prefix for parsing
+        parse_formula = formula if (formula.startswith('=') or formula.startswith('$')) else '=' + formula
+        function_name, parameters = _parse_function_call(parse_formula)
         if function_name:
+            # Special-case foreach: do NOT pre-resolve the expression parameter
+            if function_name == 'foreach':
+                if len(parameters) < 2:
+                    raise ValueError("foreach() requires 2 parameters: array and expression")
+                # Resolve the first parameter (the array)
+                array = evaluate_formula(parameters[0], file_path, frontmatter, content, element_context)
+                # The second parameter is the expression; evaluate it per-element
+                expression = parameters[1]
+                result = []
+                if isinstance(array, list):
+                    for element in array:
+                        evaluated = evaluate_formula(expression, file_path, frontmatter, content, element_context=element)
+                        result.append(evaluated)
+                return result
+            
             # Resolve parameters recursively (they may contain placeholders or nested functions)
             resolved_params = []
             for param in parameters:
                 # Recursively evaluate each parameter
-                resolved_params.append(evaluate_formula(param, file_path, frontmatter, content))
+                resolved_params.append(evaluate_formula(param, file_path, frontmatter, content, element_context))
             
             return _execute_function(function_name, resolved_params)
         else:
@@ -614,7 +680,7 @@ def evaluate_formula(
     
     # Check if it's a placeholder
     elif formula.startswith('$'):
-        return _resolve_placeholder(formula, file_path, frontmatter, content)
+        return _resolve_placeholder(formula, file_path, frontmatter, content, element_context)
     
     # Otherwise, it's a literal value
     else:

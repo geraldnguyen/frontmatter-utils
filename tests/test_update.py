@@ -1311,6 +1311,222 @@ This is a test document.""")
         self.assertTrue(results[0]['changes_made'])
         self.assertEqual(results[0]['new_value'], ['golang', 'python', 'javascript', 'ruby', 'rust'])
 
+    # =========================================================================
+    # Version 0.25.0: foreach, join, $element tests
+    # =========================================================================
+
+    def test_execute_function_join_basic(self):
+        """Test join() function with 2 parameters."""
+        result = _execute_function('join', [['a', 'b', 'c'], ', '])
+        self.assertEqual(result, 'a, b, c')
+
+    def test_execute_function_join_single_element(self):
+        """Test join() function with single element array."""
+        result = _execute_function('join', [['only'], ' '])
+        self.assertEqual(result, 'only')
+
+    def test_execute_function_join_empty_array(self):
+        """Test join() function with empty array."""
+        result = _execute_function('join', [[], ' '])
+        self.assertEqual(result, '')
+
+    def test_execute_function_join_with_max_length_fits(self):
+        """Test join() with max_length when all elements fit."""
+        result = _execute_function('join', [['a', 'b', 'c'], ' ', 10])
+        self.assertEqual(result, 'a b c')
+
+    def test_execute_function_join_with_max_length_stops_early(self):
+        """Test join() with max_length stops when string would exceed limit."""
+        result = _execute_function('join', [['hello', 'world', 'test'], ' ', 10])
+        self.assertEqual(result, 'hello')
+
+    def test_execute_function_join_with_max_length_exact(self):
+        """Test join() with max_length where last element fits exactly."""
+        result = _execute_function('join', [['ab', 'cd'], ' ', 5])
+        self.assertEqual(result, 'ab cd')
+
+    def test_execute_function_join_with_max_length_second_overflow(self):
+        """Test join() with max_length where second element causes overflow."""
+        result = _execute_function('join', [['abc', 'def'], ' ', 6])
+        # 'abc' = 3 chars, 'abc def' = 7 chars > 6 → only 'abc'
+        self.assertEqual(result, 'abc')
+
+    def test_execute_function_join_scalar_input(self):
+        """Test join() with scalar (non-list) input."""
+        result = _execute_function('join', ['hello', '-'])
+        self.assertEqual(result, 'hello')
+
+    def test_execute_function_join_missing_params(self):
+        """Test join() raises error with insufficient parameters."""
+        with self.assertRaises(ValueError):
+            _execute_function('join', [['a', 'b']])
+
+    def test_evaluate_formula_foreach_basic(self):
+        """Test foreach() with basic array and expression."""
+        frontmatter = {'countries': ['USA', 'France', 'Japan']}
+        result = evaluate_formula(
+            "=foreach($frontmatter.countries, concat('#', $element))",
+            '/test/file.md', frontmatter, ''
+        )
+        self.assertEqual(result, ['#USA', '#France', '#Japan'])
+
+    def test_evaluate_formula_foreach_with_dollar_prefix(self):
+        """Test foreach() called with $ prefix."""
+        frontmatter = {'tags': ['python', 'testing']}
+        result = evaluate_formula(
+            "$foreach($frontmatter.tags, concat('@', $element))",
+            '/test/file.md', frontmatter, ''
+        )
+        self.assertEqual(result, ['@python', '@testing'])
+
+    def test_evaluate_formula_foreach_plural_frontmatters(self):
+        """Test foreach() with $frontmatters. (plural) alias."""
+        frontmatter = {'countries': ['USA', 'France']}
+        result = evaluate_formula(
+            "=foreach($frontmatters.countries, concat('#', $element))",
+            '/test/file.md', frontmatter, ''
+        )
+        self.assertEqual(result, ['#USA', '#France'])
+
+    def test_evaluate_formula_foreach_empty_array(self):
+        """Test foreach() with empty array returns empty list."""
+        frontmatter = {'tags': []}
+        result = evaluate_formula(
+            "=foreach($frontmatter.tags, concat('#', $element))",
+            '/test/file.md', frontmatter, ''
+        )
+        self.assertEqual(result, [])
+
+    def test_evaluate_formula_foreach_missing_frontmatter(self):
+        """Test foreach() with non-existent frontmatter returns empty list."""
+        frontmatter = {}
+        result = evaluate_formula(
+            "=foreach($frontmatter.nonexistent, concat('#', $element))",
+            '/test/file.md', frontmatter, ''
+        )
+        # Non-existent frontmatter returns the placeholder string, not a list
+        # foreach over a non-list returns empty list
+        self.assertEqual(result, [])
+
+    def test_evaluate_formula_element_placeholder(self):
+        """Test $element placeholder is accessible inside foreach."""
+        frontmatter = {'items': ['apple', 'banana', 'cherry']}
+        result = evaluate_formula(
+            "=foreach($frontmatter.items, $element)",
+            '/test/file.md', frontmatter, ''
+        )
+        self.assertEqual(result, ['apple', 'banana', 'cherry'])
+
+    def test_evaluate_formula_join_with_foreach(self):
+        """Test join() combined with foreach() to produce a string."""
+        frontmatter = {'countries': ['USA', 'France', 'Japan']}
+        result = evaluate_formula(
+            "=join($foreach($frontmatter.countries, concat('#', $element)), ' ')",
+            '/test/file.md', frontmatter, ''
+        )
+        self.assertEqual(result, '#USA #France #Japan')
+
+    def test_evaluate_formula_join_with_foreach_and_max_length(self):
+        """Test join() with foreach and max_length stops appropriately."""
+        frontmatter = {'countries': ['country1', 'country2']}
+        result = evaluate_formula(
+            "=join($foreach($frontmatter.countries, concat('#', $element)), ' ', 10)",
+            '/test/file.md', frontmatter, ''
+        )
+        # '#country1' = 9 chars ≤ 10, '#country1 #country2' = 19 chars > 10
+        self.assertEqual(result, '#country1')
+
+    def test_evaluate_formula_join_basic(self):
+        """Test join() function in evaluate_formula via frontmatter array."""
+        frontmatter = {'items': ['a', 'b', 'c']}
+        result = evaluate_formula(
+            "=join($frontmatter.items, '-')",
+            '/test/file.md', frontmatter, ''
+        )
+        self.assertEqual(result, 'a-b-c')
+
+    def test_resolve_placeholder_element_inside_foreach(self):
+        """Test $element placeholder resolves correctly inside foreach."""
+        frontmatter = {'names': ['Alice', 'Bob']}
+        result = evaluate_formula(
+            "=foreach($frontmatter.names, $element)",
+            '/test/file.md', frontmatter, ''
+        )
+        self.assertEqual(result, ['Alice', 'Bob'])
+
+    def test_resolve_placeholder_element_outside_foreach(self):
+        """Test $element placeholder outside foreach returns unresolved."""
+        result = _resolve_placeholder('$element', '/test/file.md', {}, '', element_context=None)
+        self.assertEqual(result, '$element')
+
+    def test_resolve_placeholder_element_with_context(self):
+        """Test $element placeholder with element_context returns value."""
+        result = _resolve_placeholder('$element', '/test/file.md', {}, '', element_context='hello')
+        self.assertEqual(result, 'hello')
+
+    def test_compute_foreach_updates_frontmatter(self):
+        """Test that foreach compute operation updates frontmatter in file."""
+        # Create test file with tags array
+        test_file = os.path.join(self.temp_dir, 'foreach_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+tags:
+- python
+- testing
+---
+
+Content.""")
+
+        operations = [{'type': 'compute', 'formula': '=foreach($frontmatter.tags, concat(\'#\', $element))'}]
+        results = update_frontmatter([test_file], 'hashtags', operations, False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], ['#python', '#testing'])
+
+    def test_compute_join_with_foreach_updates_frontmatter(self):
+        """Test join with foreach compute operation updates frontmatter."""
+        test_file = os.path.join(self.temp_dir, 'join_foreach_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+tags:
+- python
+- testing
+---
+
+Content.""")
+
+        operations = [{'type': 'compute', 'formula': "=join($foreach($frontmatter.tags, concat('#', $element)), ' ')"}]
+        results = update_frontmatter([test_file], 'hashtag_string', operations, False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], '#python #testing')
+
+    def test_compute_join_max_length_updates_frontmatter(self):
+        """Test join with max_length compute operation updates frontmatter."""
+        test_file = os.path.join(self.temp_dir, 'join_max_test.md')
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: Test
+tags:
+- python
+- javascript
+- go
+---
+
+Content.""")
+
+        # '#python' = 7 chars, '#python #javascript' = 19 chars > 10
+        operations = [{'type': 'compute', 'formula': "=join($foreach($frontmatter.tags, concat('#', $element)), ' ', 10)"}]
+        results = update_frontmatter([test_file], 'short_tags', operations, False)
+
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0]['changes_made'])
+        self.assertEqual(results[0]['new_value'], '#python')
+
 
 if __name__ == '__main__':
     unittest.main()

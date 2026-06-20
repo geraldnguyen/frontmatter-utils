@@ -278,6 +278,12 @@ commands:
 - `wtruncate(string, max_length, suffix)` / `$wtruncate(...)`: Truncate at word boundary with suffix *(New in v0.23.0)*
 - `path(segment1, segment2, ...)` / `$path(...)`: Form path using OS-appropriate separator *(New in v0.23.0)*
 - `flat_list(element1, element2, ...)` / `$flat_list(...)`: Flatten elements into list, expanding nested lists *(New in v0.23.0)*
+- `foreach(array, expression)` / `$foreach(...)`: Map each element of an array through an expression *(New in v0.25.0)*
+  - `$element` placeholder is valid inside the expression to reference the current element
+  - Example: `=foreach($frontmatter.tags, concat('#', $element))` → `['#python', '#testing']`
+- `join(array, delimiter)` / `join(array, delimiter, max_length)`: Join array elements into a string *(New in v0.25.0)*
+  - With `max_length`: stops adding elements before the result would exceed the limit
+  - Example: `=join($foreach($frontmatter.tags, concat('#', $element)), ' ')` → `'#python #testing'`
 
 ## Usage
 

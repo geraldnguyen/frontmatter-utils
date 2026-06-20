@@ -688,7 +688,19 @@ While implement the requirements, remember to meet all instructions specified in
 
 While implement the requirements, remember to meet all instructions specified in the `# General requiremts` section
 
-# General requirements
+## Version 0.25.0 - Implement List functions and placeholders
+
+- `foreach(array, expression)` function -> array can be a literal list or a array frontmatter resolved through the `$frontmatter.<name>` expression
+- `$element` placeholder**: refer to the current element in the list. This placeholder is valid within the expression of `foreach` or any future list-operation functions
+- `join(array, delimiter)`: join each element in the array into one string.
+- `join(array, delimiter, max_length): join each element in the array into one string, as long as the resulting string's length is less than or equals to the `max_length`. If adding an element would exceeds `max_length`, do not add the element and return the current string immmediately.
+
+Examples:
+- `foreach($frontmatters.countries, concat('#', $element)`: Map the `countries` array front matter into an array of `#<country>`
+- `join($foreach($frontmatters.countries, concat('#', $element), ' '): Map the `countries` array front matter into one string e.g. `#country1 #country2`
+- `join($foreach($frontmatters.countries, concat('#', $element), ' ', 10): Map the `countries` array front matter into one string  as long as that string has less than 10 characters e.g. `#country1`
+
+**General requirements**
 
 - For every new command, new option introduced or modified or removed, ensure the specs file is updated to support and reflect the changes. For example, the specs must support the new `--compute <value>` option of "update" command, the new validation rules of the "validate" commands etc...`
 
@@ -701,16 +713,3 @@ Create or update extensive unit tests for both the library mode and CLI modes.
 Update README.md, SPECS.md, CLI.md and API.md files with comprehensive instruction on getting started and how to use the new enhancement or capability of the library and CLI. Capture the changelog in the README.md too.
 
 Update the __init__.py, setup.py file and pyproject.toml with correct version number and other relevant information to reflec the new version and just implemented changes
-
-
-
-# Future versions -- do not execute unless explicitly prompt
-
-
-- analyze and summarize
-- trim space, blank line
-- expansive vs collapse e.g array: [value1, value2] vs arrays: - value1, - value2, "string" vs string
--- dry-run
-
-
- 

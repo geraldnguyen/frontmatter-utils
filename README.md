@@ -317,6 +317,32 @@ This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when
 
 ## Changelog
 
+### Version 0.25.0
+
+- **New List Functions and `$element` Placeholder**
+  - `foreach(array, expression)`: Maps each element of an array through an expression, returning a new array
+    - `array` can be a frontmatter array accessed via `$frontmatter.name` or `$frontmatters.name`
+    - `expression` is evaluated for each element; use `$element` to reference the current element
+    - Example: `=foreach($frontmatter.tags, concat('#', $element))` → `['#python', '#testing']`
+    - Supports both `=` and `$` prefix: `$foreach(...)` or `=foreach(...)`
+  - `join(array, delimiter)`: Joins all array elements into a single string with the given delimiter
+    - Example: `=join($frontmatter.tags, ' ')` → `'python testing'`
+  - `join(array, delimiter, max_length)`: Joins elements with delimiter, stopping before exceeding `max_length`
+    - Example: `=join($frontmatter.tags, ' ', 10)` → stops adding elements once length would exceed 10
+  - `$element` placeholder: References the current element inside a `foreach` expression
+    - Valid only within the expression argument of `foreach` (and future list-operation functions)
+  - `$frontmatters.name` (plural): Supported as an alias for `$frontmatter.name`
+  - Bare function calls (without `=` or `$` prefix) are now recognized as function calls in expressions, e.g. `concat('#', $element)` inside `foreach`
+
+- **Combined Example**:
+  ```
+  # Map tags to hashtag strings, then join with space
+  fmu update "*.md" --name hashtags --compute "=join($foreach($frontmatter.tags, concat('#', $element)), ' ')"
+  
+  # Same but limit to 20 characters max
+  fmu update "*.md" --name hashtags --compute "=join($foreach($frontmatter.tags, concat('#', $element)), ' ', 20)"
+  ```
+
 ### Version 0.24.0
 
 - **Execute Command Enhancements**

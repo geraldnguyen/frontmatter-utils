@@ -97,6 +97,8 @@ fmu read "*.md" --output frontmatter --save-specs "read blog posts" specs.yaml
 - `$content`: Content after frontmatter
 - `$frontmatter.fieldname`: Access frontmatter field (single value or full array as JSON)
 - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
+- `$frontmatters.fieldname`: Alias for `$frontmatter.fieldname` (plural form) *(New in v0.25.0)*
+- `$element`: Current element inside a `foreach` expression *(New in v0.25.0)*
 
 **Map Value Types (New in v0.22.0):**
 The `--map KEY VALUE` option supports three types of values:
@@ -442,6 +444,8 @@ Formulas can be:
   - `$content`: Content after frontmatter
   - `$frontmatter.fieldname`: Access frontmatter field (single value or array)
   - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
+  - `$frontmatters.fieldname`: Alias for `$frontmatter.fieldname` (plural form) *(New in v0.25.0)*
+  - `$element`: Current element inside a `foreach` expression *(New in v0.25.0)*
 - **Function calls**: `=function_name(param1, param2, ...)`
 
 **Built-in Functions (v0.12.0):**
@@ -481,6 +485,18 @@ Formulas can be:
   - Elements are added in the order specified
   - Example: `flat_list('a', ['b', 'c'], 'd')` returns `['a', 'b', 'c', 'd']`
   - Example: `flat_list('new', $frontmatter.tags, 'extra')` combines literal values with a list field
+- `foreach(array, expression)`: Map each element of an array through an expression, returning a new array *(New in v0.25.0)*
+  - `array`: a frontmatter array (`$frontmatter.name` or `$frontmatters.name`)
+  - `expression`: evaluated per element; use `$element` to reference the current element
+  - Supports bare function calls in expression (without `=`/`$` prefix), e.g. `concat('#', $element)`
+  - Example: `=foreach($frontmatter.tags, concat('#', $element))` → `['#python', '#testing']`
+  - Example: `$foreach($frontmatter.countries, concat('#', $element))` (using `$` prefix)
+- `join(array, delimiter)`: Join all array elements into a single string *(New in v0.25.0)*
+  - Example: `=join($frontmatter.tags, ' ')` → `'python testing'`
+  - Example: `=join($foreach($frontmatter.tags, concat('#', $element)), ' ')` → `'#python #testing'`
+- `join(array, delimiter, max_length)`: Join elements stopping before the result exceeds `max_length` *(New in v0.25.0)*
+  - If adding the next element would exceed `max_length`, stops and returns the current string
+  - Example: `=join($frontmatter.tags, ' ', 10)` → `'python'` (if `'python testing'` would exceed 10 chars)
 
 **Compute Behavior:**
 - If the frontmatter field **does not exist**, it will be **created** with the computed value
