@@ -693,6 +693,39 @@ class TestSpecsFunctionality(unittest.TestCase):
         
         self.assertIn('aliases:', content)
 
+    @patch.dict(os.environ, {'FMU_TEST_ENV': 'specs-env'}, clear=False)
+    def test_execute_command_read_json_with_env_placeholder(self):
+        """Test executing a specs read command with env placeholder support (v0.27.0)."""
+        import json
+        from fmu.specs import execute_command
+
+        test_md = os.path.join(self.test_dir, 'test.md')
+        with open(test_md, 'w') as f:
+            f.write('---\ntitle: Test\n---\nContent')
+
+        command_entry = {
+            'command': 'read',
+            'description': 'read env placeholder',
+            'patterns': [test_md],
+            'output': 'json',
+            'map': [
+                ['title', '$frontmatter.title'],
+                ['env', '$env[FMU_TEST_ENV]']
+            ]
+        }
+
+        old_stdout = sys.stdout
+        sys.stdout = captured_output = StringIO()
+        try:
+            exit_code = execute_command(command_entry)
+        finally:
+            sys.stdout = old_stdout
+
+        self.assertEqual(exit_code, 0)
+        data = json.loads(captured_output.getvalue().strip())
+        self.assertEqual(data['title'], 'Test')
+        self.assertEqual(data['env'], 'specs-env')
+
     def test_execute_with_command_regex_filter(self):
         """Test execute command with --command regex filter (version 0.24.0)."""
         # Create test markdown files

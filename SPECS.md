@@ -36,7 +36,7 @@ commands:
     patterns:
       - "*.md"
     output: template
-    template: '{ "title": "$frontmatter.title", "content": "$content" }'
+    template: '{ "title": "$frontmatter.title", "content": "$content", "content_root": "$env[CONTENT_ROOT]" }'
     escape: true
     file: output.json
   
@@ -57,6 +57,7 @@ commands:
       - [title, '$frontmatter.title']
       - [author, '$frontmatter.author']
       - [path, '$filepath']
+      - [content_root, '$env[CONTENT_ROOT]']
       - [timestamp, '=now()']
     pretty: true
     file: data.json
@@ -76,13 +77,13 @@ commands:
 **Options:**
 - `output`: What to output (`frontmatter`, `content`, `both`, `template`, `json`, or `yaml`) *(json/yaml added in v0.22.0)*
 - `skip_heading`: Whether to skip section headings (`true` or `false`)
-- `template`: Template string for custom output formatting *(New in v0.9.0)*
+- `template`: Template string for custom output formatting. Supports the same placeholders documented for templates, including `$env.NAME` and `$env[NAME]`. *(New in v0.9.0, env placeholders added in v0.27.0)*
 - `escape`: Escape special characters in output (`true` or `false`) *(New in v0.9.0)*
 - `file`: Save output to file instead of console *(New in v0.10.0)*
 - `individual`: Create individual output files relative to each input file's folder (`true` or `false`) *(New in v0.21.0)*
 - `map`: Array of key-value pairs for JSON/YAML output (required when output is `json` or `yaml`) *(New in v0.22.0)*
   - Each item is a 2-element array: `[key, value]`
-  - Values can be literals, placeholders, or functions
+  - Values can be literals, placeholders, or functions, including environment placeholders such as `$env.NAME` and `$env[NAME]` *(New in v0.27.0)*
 - `pretty`: Prettify JSON/YAML output (`true` or `false`) *(New in v0.22.0)*
 - `compact`: Minify JSON/YAML output (`true` or `false`) *(New in v0.22.0)*
 
@@ -255,7 +256,7 @@ commands:
 
 **Compute Formulas (v0.12.0):**
 - Literal values: `"1"`, `"2nd"`, `"any text"`
-- Placeholder references: `"$filename"`, `"$filepath"`, `"$folderpath"`, `"$foldername"`, `"$content"`, `"$frontmatter.name"`, `"$frontmatter.name[index]"` *(folderpath/foldername added in v0.23.0)*
+- Placeholder references: `"$filename"`, `"$filepath"`, `"$folderpath"`, `"$foldername"`, `"$content"`, `"$frontmatter.name"`, `"$frontmatter.name[index]"`, `"$env.NAME"`, `"$env[NAME]"` *(folderpath/foldername added in v0.23.0, env placeholders added in v0.27.0)*
 - Function calls: `"=now()"`, `"$now()"`, `"=hash($frontmatter.url, 10)"`, `"=path($folderpath, $concat(output, .json))"` *($ prefix added in v0.23.0)*
   - Functions can use `=` prefix (only at beginning) or `$` prefix (at beginning or nested)
   - `$` prefix enables nested function calls

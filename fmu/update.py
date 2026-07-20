@@ -16,7 +16,7 @@ import yaml
 
 
 # Placeholder patterns that should be skipped by coalesce when unresolved
-UNRESOLVED_PLACEHOLDER_PATTERNS = ['$frontmatter.', '$frontmatters.', '$filename', '$filepath', '$content', '$folderpath', '$foldername', '$element']
+UNRESOLVED_PLACEHOLDER_PATTERNS = ['$frontmatter.', '$frontmatters.', '$filename', '$filepath', '$content', '$folderpath', '$foldername', '$element', '$env.', '$env[']
 
 
 def _is_unresolved_placeholder(value: str) -> bool:
@@ -33,6 +33,20 @@ def _is_unresolved_placeholder(value: str) -> bool:
         True if the string is an unresolved placeholder, False otherwise
     """
     return any(value.startswith(pattern) or value == pattern for pattern in UNRESOLVED_PLACEHOLDER_PATTERNS)
+
+
+def _lookup_environment_variable(name: str) -> Optional[str]:
+    """Look up an environment variable, tolerating case differences across platforms."""
+    value = os.environ.get(name)
+    if value is not None:
+        return value
+
+    lowered_name = name.lower()
+    for env_name, env_value in os.environ.items():
+        if env_name.lower() == lowered_name:
+            return env_value
+
+    return None
 
 
 def transform_case(value: str, case_type: str) -> str:
@@ -254,6 +268,22 @@ def _resolve_placeholder(placeholder: str, file_path: str, frontmatter: Dict[str
         return os.path.basename(os.path.dirname(file_path))
     elif placeholder == '$content':
         return content
+    elif placeholder.startswith('$env.'):
+        match = re.fullmatch(r'\$env\.([a-zA-Z_][a-zA-Z0-9_]*)', placeholder)
+        if match:
+            env_name = match.group(1)
+            env_value = _lookup_environment_variable(env_name)
+            return env_value if env_value is not None else placeholder
+        return placeholder
+    elif placeholder.startswith('$env['):
+        match = re.fullmatch(r'\$env\[([^\]]+)\]', placeholder)
+        if match:
+            env_name = match.group(1).strip()
+            if not env_name:
+                return placeholder
+            env_value = _lookup_environment_variable(env_name)
+            return env_value if env_value is not None else placeholder
+        return placeholder
     elif placeholder.startswith('$frontmatter.') or placeholder.startswith('$frontmatters.'):
         # Extract field name and optional index
         # Support both $frontmatter.name (singular) and $frontmatters.name (plural)

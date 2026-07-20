@@ -66,6 +66,9 @@ fmu read "*.md" --output json --map title '$frontmatter.title' --map type "artic
 # Export with custom template (New in v0.9.0)
 fmu read "*.md" --output template --template '{ "title": "$frontmatter.title", "path": "$filepath" }'
 
+# Include environment variables (New in v0.27.0)
+fmu read "*.md" --output template --template '{ "content_root": "$env[CONTENT_ROOT]" }'
+
 # Save output to file (New in v0.10.0)
 fmu read "*.md" --file output.txt
 
@@ -99,6 +102,8 @@ fmu read "*.md" --output frontmatter --save-specs "read blog posts" specs.yaml
 - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
 - `$frontmatters.fieldname`: Alias for `$frontmatter.fieldname` (plural form) *(New in v0.25.0)*
 - `$element`: Current element inside a `foreach` expression *(New in v0.25.0)*
+- `$env.NAME`: Access environment variable `NAME` *(New in v0.27.0)*
+- `$env[NAME]`: Alternate environment variable syntax *(New in v0.27.0)*
 
 **Map Value Types (New in v0.22.0):**
 The `--map KEY VALUE` option supports three types of values:
@@ -114,6 +119,7 @@ The `--map KEY VALUE` option supports three types of values:
    - `$content`: Content after frontmatter
    - `$frontmatter.fieldname`: Access frontmatter field
    - `$frontmatter.fieldname[N]`: Array element access
+  - `$env.NAME` / `$env[NAME]`: Environment variable access *(New in v0.27.0)*
    - Example: `--map path '$filepath'`, `--map title '$frontmatter.title'`, `--map folder '$foldername'`
 
 3. **Functions**: Built-in functions with `=` or `$` prefix *($ prefix added in v0.23.0)*
@@ -354,6 +360,7 @@ fmu update "*.md" --name source_file --compute "$filename"
 fmu update "*.md" --name full_path --compute "$filepath"
 fmu update "*.md" --name folder_path --compute "$folderpath"  # v0.23.0
 fmu update "*.md" --name folder_name --compute "$foldername"  # v0.23.0
+fmu update "*.md" --name content_root --compute "$env.CONTENT_ROOT"  # v0.27.0
 
 ## String manipulation functions (v0.23.0)
 fmu update "*.md" --name slug --compute "=basename($frontmatter.url)"
@@ -446,6 +453,7 @@ Formulas can be:
   - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
   - `$frontmatters.fieldname`: Alias for `$frontmatter.fieldname` (plural form) *(New in v0.25.0)*
   - `$element`: Current element inside a `foreach` expression *(New in v0.25.0)*
+  - `$env.NAME` / `$env[NAME]`: Access environment variables *(New in v0.27.0)*
 - **Function calls**: `=function_name(param1, param2, ...)`
 
 **Built-in Functions (v0.12.0):**

@@ -21,6 +21,7 @@ A Python library and CLI tool for parsing and searching front matter in files.
 - **Case Transformations**: Six different case conversion types *(New in v0.4.0)*
 - **Value Deduplication**: Automatic removal of duplicate array values *(New in v0.4.0)*
 - **Template Output**: Export content and frontmatter using custom templates *(New in v0.9.0)*
+- **Environment Variable Placeholders**: Resolve `$env.name` and `$env[name]` in template and formula-aware features *(New in v0.27.0)*
 - **Character Escaping**: Escape special characters in output *(New in v0.9.0)*
 - **File Output**: Save command output directly to files *(New in v0.10.0)*
 - **JSON/YAML Output**: Export data as JSON or YAML with custom maps *(New in v0.22.0)*
@@ -159,6 +160,9 @@ fmu read "*.md" --output template --template '{ "first_tag": "$frontmatter.tags[
 # Include file metadata
 fmu read "*.md" --output template --template '{ "path": "$filepath", "name": "$filename" }'
 
+# Include environment variables
+fmu read "*.md" --output template --template '{ "content_root": "$env[CONTENT_ROOT]" }'
+
 # Combine with escape option for JSON-safe output
 fmu read "*.md" --output template --template '{ "content": "$content" }' --escape
 ```
@@ -169,6 +173,10 @@ fmu read "*.md" --output template --template '{ "content": "$content" }' --escap
 - `$content`: Content after frontmatter
 - `$frontmatter.fieldname`: Access frontmatter field (single value or full array as JSON)
 - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
+- `$env.NAME`: Access environment variable `NAME` *(New in v0.27.0)*
+- `$env[NAME]`: Alternate environment variable syntax *(New in v0.27.0)*
+
+Environment variable placeholders are also available anywhere formulas are evaluated, including `read --map ...` values and `update --compute ...` expressions.
 
 **Escape Option:**
 When `--escape` is used, the following characters are escaped:
@@ -316,6 +324,13 @@ env:
 This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when printing non-ASCII characters. It's a recommended CI setting when your content may contain extended Unicode characters.
 
 ## Changelog
+
+### Version 0.27.0
+
+- **Environment Variable Placeholders**
+  - Added `$env.name` and `$env[name]` placeholder support.
+  - Available in `read --output template`, `read --output json|yaml --map ...`, and all formula-aware features such as `update --compute ...`.
+  - Missing environment variables remain unresolved placeholders, matching existing placeholder behavior.
 
 ### Version 0.26.0
 

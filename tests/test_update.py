@@ -343,6 +343,18 @@ Content here.""")
         """Test resolving $filepath placeholder."""
         result = _resolve_placeholder('$filepath', '/path/to/test.md', {}, '')
         self.assertEqual(result, '/path/to/test.md')
+
+    @patch.dict(os.environ, {'FMU_TEST_ENV': 'env-value'}, clear=False)
+    def test_resolve_placeholder_env_dot(self):
+        """Test resolving $env.NAME placeholder."""
+        result = _resolve_placeholder('$env.FMU_TEST_ENV', '/path/to/test.md', {}, '')
+        self.assertEqual(result, 'env-value')
+
+    @patch.dict(os.environ, {'FMU_TEST_ENV': 'env-value'}, clear=False)
+    def test_evaluate_formula_env_bracket(self):
+        """Test evaluating $env[NAME] placeholder."""
+        result = evaluate_formula('$env[FMU_TEST_ENV]', '/path/to/test.md', {}, '')
+        self.assertEqual(result, 'env-value')
     
     def test_resolve_placeholder_content(self):
         """Test resolving $content placeholder."""

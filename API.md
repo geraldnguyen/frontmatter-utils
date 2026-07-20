@@ -445,7 +445,7 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 
 The update operations support compute formulas that can be:
 - **Literal values**: `1`, `2nd`, `just any text`
-- **Placeholder references**: `$filename`, `$filepath`, `$folderpath`, `$foldername`, `$content`, `$frontmatter.name`, `$frontmatter.name[index]`
+- **Placeholder references**: `$filename`, `$filepath`, `$folderpath`, `$foldername`, `$content`, `$frontmatter.name`, `$frontmatter.name[index]`, `$env.NAME`, `$env[NAME]` *(env placeholders added in v0.27.0)*
 - **Function calls**: `=function_name(param1, param2, ...)` or `$function_name(param1, param2, ...)` *($ prefix added in v0.23.0)*
   - The `=` prefix can only be used at the beginning of an expression
   - The `$` prefix can be used at the beginning or nested within other expressions
@@ -813,6 +813,8 @@ result = evaluate_formula("=concat('a', '\\n', 'b')", '/tmp/test.md', {}, '')
 - `$frontmatter.fieldname[N]`: Access array element by index (0-based)
 - `$frontmatters.fieldname`: Alias for `$frontmatter.fieldname` (plural form) *(New in v0.25.0)*
 - `$element`: Current element inside a `foreach` expression *(New in v0.25.0)*
+- `$env.NAME`: Access environment variable `NAME` *(New in v0.27.0)*
+- `$env[NAME]`: Alternate environment variable syntax *(New in v0.27.0)*
 
 ### Compute Operation Behavior
 
@@ -867,6 +869,8 @@ Render a template string with file data and frontmatter values.
 - `$content`: Content after frontmatter
 - `$frontmatter.fieldname`: Access frontmatter field
 - `$frontmatter.fieldname[N]`: Access array element by index
+- `$env.NAME`: Access environment variable `NAME` *(New in v0.27.0)*
+- `$env[NAME]`: Alternate environment variable syntax *(New in v0.27.0)*
 
 **Example:**
 ```python

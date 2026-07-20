@@ -46,7 +46,7 @@ This is test content.""")
     def test_cmd_version(self):
         """Test version command."""
         output = self.capture_output(cmd_version)
-        self.assertIn('0.26.0', output)
+        self.assertIn('0.27.0', output)
     
     def test_cmd_help(self):
         """Test help command."""
@@ -134,6 +134,13 @@ and tabs.""")
         template = '{ "content": "$content" }'
         output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
         self.assertIn('"content": "This is test content."', output)
+
+    @patch.dict(os.environ, {'FMU_TEST_ENV': 'template-env'}, clear=False)
+    def test_cmd_read_template_with_env_placeholder(self):
+        """Test read command with template using $env[NAME] (v0.27.0)."""
+        template = '{ "env": "$env[FMU_TEST_ENV]" }'
+        output = self.capture_output(cmd_read, [self.test_file], 'template', False, 'yaml', False, template)
+        self.assertIn('"env": "template-env"', output)
     
     def test_cmd_read_template_with_array(self):
         """Test read command with template using array frontmatter."""
@@ -254,7 +261,7 @@ Line two""")
     def test_main_version(self):
         """Test main function with version command."""
         output = self.capture_output(main)
-        self.assertIn('0.26.0', output)
+        self.assertIn('0.27.0', output)
     
     @patch('sys.argv', ['fmu', 'help'])
     def test_main_help(self):
@@ -790,6 +797,16 @@ Test content.""")
         data = json.loads(output.strip())
         expected_folder = os.path.dirname(self.test_file)
         self.assertEqual(data['folder'], expected_folder)
+
+    @patch.dict(os.environ, {'FMU_TEST_ENV': 'json-env'}, clear=False)
+    def test_cmd_read_json_with_env_placeholder(self):
+        """Test read command with JSON output using $env.NAME placeholder (v0.27.0)."""
+        import json
+        map_items = [('env', '$env.FMU_TEST_ENV')]
+        output = self.capture_output(cmd_read, [self.test_file], 'json', False, 'yaml', False, None, None, False, map_items)
+
+        data = json.loads(output.strip())
+        self.assertEqual(data['env'], 'json-env')
     
     def test_cmd_read_json_with_basename_function(self):
         """Test read command with JSON output using =basename() function (v0.23.0)."""

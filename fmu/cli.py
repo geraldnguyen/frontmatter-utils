@@ -81,63 +81,28 @@ def _render_template(template: str, file_path: str, frontmatter: Dict[str, Any],
     Returns:
         Rendered template string
     """
-    import os
+    import json
     import re
-    
-    result = template
-    
-    # Replace $filename
-    filename = os.path.basename(file_path)
-    result = result.replace('$filename', filename)
-    
-    # Replace $filepath
-    result = result.replace('$filepath', file_path)
-    
-    # Replace $folderpath
-    folderpath = os.path.dirname(file_path)
-    result = result.replace('$folderpath', folderpath)
-    
-    # Replace $foldername
-    foldername = os.path.basename(os.path.dirname(file_path))
-    result = result.replace('$foldername', foldername)
-    
-    # Replace $content
-    result = result.replace('$content', content)
-    
-    # Replace $frontmatter.name and $frontmatter.name[index] placeholders
-    if frontmatter:
-        # Find all frontmatter placeholders
-        # Pattern: $frontmatter.name or $frontmatter.name[number]
-        pattern = r'\$frontmatter\.([a-zA-Z_][a-zA-Z0-9_]*)(?:\[(\d+)\])?'
-        
-        def replace_frontmatter(match):
-            field_name = match.group(1)
-            index_str = match.group(2)
-            
-            if field_name not in frontmatter:
-                return match.group(0)  # Keep placeholder if field not found
-            
-            value = frontmatter[field_name]
-            
-            if index_str is not None:
-                # Array indexing
-                index = int(index_str)
-                if isinstance(value, list) and 0 <= index < len(value):
-                    return str(value[index])
-                else:
-                    return match.group(0)  # Keep placeholder if invalid
-            else:
-                # Regular field access
-                if isinstance(value, list):
-                    # Convert list to string representation
-                    import json
-                    return json.dumps(value)
-                else:
-                    return str(value)
-        
-        result = re.sub(pattern, replace_frontmatter, result)
-    
-    return result
+    from .update import _resolve_placeholder
+
+    placeholder_pattern = re.compile(
+        r'\$frontmatters?\.[a-zA-Z_][a-zA-Z0-9_]*(?:\[\d+\])?'
+        r'|\$env\[[^\]]+\]'
+        r'|\$env\.[a-zA-Z_][a-zA-Z0-9_]*'
+        r'|\$(?:filename|filepath|folderpath|foldername|content|element)'
+    )
+
+    def replace_placeholder(match):
+        placeholder = match.group(0)
+        value = _resolve_placeholder(placeholder, file_path, frontmatter or {}, content)
+
+        if value == placeholder:
+            return placeholder
+        if isinstance(value, (list, dict)):
+            return json.dumps(value)
+        return str(value)
+
+    return placeholder_pattern.sub(replace_placeholder, template)
 
 
 def _build_map_from_items(map_items: List[tuple], file_path: str, frontmatter: Dict[str, Any], content: str) -> Dict[str, Any]:
@@ -549,7 +514,7 @@ def create_parser():
     )
     read_parser.add_argument(
         '--template',
-        help='Template string for output (required when --output is template). Supports: $filename, $filepath, $folderpath, $foldername, $content, $frontmatter.name, $frontmatter.name[index]'
+        help='Template string for output (required when --output is template). Supports: $filename, $filepath, $folderpath, $foldername, $content, $frontmatter.name, $frontmatter.name[index], $env.name, $env[name]'
     )
     read_parser.add_argument(
         '--file',
@@ -565,7 +530,7 @@ def create_parser():
         action='append',
         nargs=2,
         metavar=('KEY', 'VALUE'),
-        help='Build a key-value map for JSON/YAML output. VALUE can be literals, placeholders ($filepath, $folderpath, $foldername, $frontmatter.name), or functions (=now(), =list(), =basename(), =trim(), =truncate(), =wtruncate(), =path(), =flat_list()). Can be used multiple times.'
+        help='Build a key-value map for JSON/YAML output. VALUE can be literals, placeholders ($filepath, $folderpath, $foldername, $frontmatter.name, $env.name, $env[name]), or functions (=now(), =list(), =basename(), =trim(), =truncate(), =wtruncate(), =path(), =flat_list()). Can be used multiple times.'
     )
     read_parser.add_argument(
         '--pretty',
@@ -658,7 +623,7 @@ def create_parser():
     update_parser.add_argument(
         '--compute',
         action='append',
-        help='Compute and set frontmatter value using formula (literal, placeholder, or function call). Can be used multiple times.'
+        help='Compute and set frontmatter value using formula (literal, placeholder such as $frontmatter.name or $env.name, or function call). Can be used multiple times.'
     )
     
     # Replace operations (can appear multiple times)
