@@ -713,6 +713,12 @@ Expose the following case operation as function:
 
 Do not escape newline string `\n` in `concat` function e.g. `concat('a', '\n', 'b')` will result in `a\nb` instead of `a\\nb`
 
+## Version 0.27.0 - Support `$env.name` or `$env[name]` placeholders 
+
+Short for environment, the `$env.name` and `$env[name]` allow the replacemne t of the named environment variable value to the placeholder expression.
+
+All existing and future processing that support placeholder must support both existing and new placeholders.
+
 
 **General requirements**
 
