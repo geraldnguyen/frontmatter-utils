@@ -9,6 +9,7 @@ import shutil
 from io import StringIO
 from unittest.mock import patch
 import sys
+import yaml
 from fmu.core import parse_file
 from fmu.update import (
     transform_case, apply_replace_operation, apply_remove_operation,
@@ -108,6 +109,11 @@ Another test document.""")
         self.assertEqual(transform_case("Hello World", "kebab-case"), "hello-world")
         self.assertEqual(transform_case("HelloWorld", "kebab-case"), "hello-world")
         self.assertEqual(transform_case("hello_world", "kebab-case"), "hello-world")
+
+    def test_transform_case_hashtag(self):
+        """Test hashtag transformation."""
+        self.assertEqual(transform_case("hello world", "hashtag"), "#HelloWorld")
+        self.assertEqual(transform_case("hello-world, again!", "hashtag"), "#HelloWorldAgain")
 
     def test_apply_replace_operation_string(self):
         """Test replace operation on string."""
@@ -328,6 +334,29 @@ Content here.""")
             self.assertIn("Updated 'tags'", output)
         except SystemExit:
             self.fail("main() raised SystemExit when deduplication should be a valid operation")
+        finally:
+            if os.path.exists(test_file):
+                os.remove(test_file)
+
+    @patch('sys.argv', ['fmu', 'update', '/tmp/test_hashtag.md', '--name', 'title', '--case', 'hashtag'])
+    def test_main_update_hashtag_case(self):
+        """Test CLI update command with hashtag case transformation."""
+        test_file = '/tmp/test_hashtag.md'
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("""---
+title: hello world
+---
+
+Content here.""")
+
+        try:
+            output = self.capture_output(main)
+            self.assertIn("Updated 'title'", output)
+            with open(test_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            frontmatter_part = content.split('---\n', 2)[1]
+            parsed = yaml.safe_load(frontmatter_part)
+            self.assertEqual(parsed['title'], '#HelloWorld')
         finally:
             if os.path.exists(test_file):
                 os.remove(test_file)
@@ -1586,6 +1615,11 @@ Content.""")
         """Test kebabCase() case function."""
         result = _execute_function('kebabCase', ['Hello World'])
         self.assertEqual(result, 'hello-world')
+
+    def test_execute_function_hashtag_case(self):
+        """Test hashtagCase() case function."""
+        result = _execute_function('hashtagCase', ['hello world'])
+        self.assertEqual(result, '#HelloWorld')
 
     def test_evaluate_formula_case_functions(self):
         """Test case functions in evaluate_formula()."""

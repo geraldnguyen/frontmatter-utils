@@ -615,7 +615,7 @@ def create_parser():
     )
     update_parser.add_argument(
         '--case',
-        choices=['upper', 'lower', 'Sentence case', 'Title Case', 'snake_case', 'kebab-case'],
+        choices=['upper', 'lower', 'Sentence case', 'Title Case', 'hashtag', 'snake_case', 'kebab-case'],
         help='Transform the case of the frontmatter value(s)'
     )
     

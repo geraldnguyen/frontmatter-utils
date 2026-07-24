@@ -18,7 +18,7 @@ A Python library and CLI tool for parsing and searching front matter in files.
 - **Regex Support**: Use regular expressions for value matching
 - **Validation Engine**: Validate frontmatter fields against custom rules
 - **Update Engine**: Transform, replace, and remove frontmatter values *(New in v0.4.0)*
-- **Case Transformations**: Six different case conversion types *(New in v0.4.0)*
+- **Case Transformations**: Seven different case conversion types, including hashtag formatting *(New in v0.28.0)*
 - **Value Deduplication**: Automatic removal of duplicate array values *(New in v0.4.0)*
 - **Template Output**: Export content and frontmatter using custom templates *(New in v0.9.0)*
 - **Environment Variable Placeholders**: Resolve `$env.name` and `$env[name]` in template and formula-aware features *(New in v0.27.0)*
@@ -324,6 +324,15 @@ env:
 This makes Python's stdout/stderr use UTF-8 and prevents UnicodeEncodeError when printing non-ASCII characters. It's a recommended CI setting when your content may contain extended Unicode characters.
 
 ## Changelog
+
+### Version 0.28.0
+
+- **New Hashtag Case Transformation**
+  - Added a new `hashtag` case option for `update --case`.
+  - It removes spaces and punctuation marks, then capitalizes each word and prefixes the result with `#`.
+  - Example: `hello world` → `#HelloWorld`, `hello-world, again!` → `#HelloWorldAgain`.
+  - The same behavior is available through the compute function `hashtagCase(arg)` and `$hashtagCase(...)`.
+  - The CLI help text and specs support the new option.
 
 ### Version 0.27.0
 

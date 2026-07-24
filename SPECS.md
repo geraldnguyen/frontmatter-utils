@@ -184,6 +184,13 @@ commands:
       - "*.md"
     name: title
     case: Title Case
+
+  - command: update
+    description: Hashtag formatting
+    patterns:
+      - "*.md"
+    name: title
+    case: hashtag
     
   - command: update
     description: remove test tags
@@ -247,7 +254,7 @@ commands:
 **Options:**
 - `name`: Name of frontmatter field to update (required)
 - `deduplication`: Eliminate exact duplicates in array values (`true` or `false`)
-- `case`: Transform case (`upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`)
+- `case`: Transform case (`upper`, `lower`, `Sentence case`, `Title Case`, `hashtag`, `snake_case`, `kebab-case`)
 - `compute`: Array of formulas to compute and set field values *(New in v0.12.0)*
 - `replace`: Array of "from to" pairs for value replacement
 - `remove`: Array of values to remove. Use `null` to remove entire field *(Enhanced in v0.20.0)*

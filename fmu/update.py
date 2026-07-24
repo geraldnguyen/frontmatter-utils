@@ -60,6 +60,16 @@ def transform_case(value: str, case_type: str) -> str:
     elif case_type == 'Title Case':
         # Handle contractions properly by using a custom title case logic
         return _title_case_with_contractions(value)
+    elif case_type == 'hashtag':
+        words = re.split(r'[^A-Za-z0-9]+', value) if value else []
+        words = [word for word in words if word]
+        if not words:
+            return ''
+        normalized_words = []
+        for word in words:
+            if word:
+                normalized_words.append(word[0].upper() + word[1:].lower())
+        return '#' + ''.join(normalized_words)
     elif case_type == 'snake_case':
         # Convert to snake_case
         # First, handle camelCase by inserting underscores before uppercase letters
@@ -480,6 +490,11 @@ def _execute_function(function_name: str, parameters: List[Any]) -> Any:
         if len(parameters) < 1:
             raise ValueError("snakeCase() requires 1 parameter")
         return apply_case_transformation(parameters[0], 'snake_case')
+
+    elif function_name == 'hashtagCase':
+        if len(parameters) < 1:
+            raise ValueError("hashtagCase() requires 1 parameter")
+        return apply_case_transformation(parameters[0], 'hashtag')
 
     elif function_name == 'kebabCase':
         if len(parameters) < 1:

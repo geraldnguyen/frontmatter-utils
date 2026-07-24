@@ -720,6 +720,10 @@ Short for environment, the `$env.name` and `$env[name]` allow the replacemne t o
 All existing and future processing that support placeholder must support both existing and new placeholders.
 
 
+## Version 0.28.0 - Support `hashtag` case operation
+
+Remove all spaces and punctuation marks, and capitalize the first letter of each word to make it readable.
+
 **General requirements**
 
 - For every new command, new option introduced or modified or removed, ensure the specs file is updated to support and reflect the changes. For example, the specs must support the new `--compute <value>` option of "update" command, the new validation rules of the "validate" commands etc...`

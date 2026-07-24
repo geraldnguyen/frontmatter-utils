@@ -291,7 +291,7 @@ Update frontmatter fields in files with various transformations.
 
 # Case transformation
 {'type': 'case', 'case_type': 'upper'}  
-# Options: 'upper', 'lower', 'Sentence case', 'Title Case', 'snake_case', 'kebab-case'
+# Options: 'upper', 'lower', 'Sentence case', 'Title Case', 'hashtag', 'snake_case', 'kebab-case'
 
 # Value replacement
 {'type': 'replace', 'from': 'old_value', 'to': 'new_value', 'ignore_case': False, 'regex': False}
@@ -427,7 +427,7 @@ update_and_output(['*.md'], 'tags', operations, deduplication=True)
 ```
 
 **New Features (v0.4.0):**
-- **Case Transformations**: Six different case transformation types (upper, lower, sentence, title, snake_case, kebab-case)
+- **Case Transformations**: Seven different case transformation types (upper, lower, sentence, title, hashtag, snake_case, kebab-case)
 - **Flexible Replacements**: Substring and regex-based replacements with case sensitivity options
 - **Value Removal**: Remove specific values or regex patterns from frontmatter fields
 - **Array Deduplication**: Automatic removal of exact duplicates in array values
@@ -780,6 +780,7 @@ results = update_frontmatter(['*.md'], 'short_tags', operations, deduplication=F
 - `titleCase(arg)`: Convert to Title Case
 - `snakeCase(arg)`: Convert to snake_case
 - `kebabCase(arg)`: Convert to kebab-case
+- `hashtagCase(arg)`: Convert to hashtag format *(New in v0.28.0)*
 
 These functions map directly to the same case transformations supported by the `--case` update option.
 

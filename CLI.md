@@ -320,7 +320,7 @@ Update frontmatter fields in files with various transformations.
 
 **Update Operations:**
 - `--compute FORMULA`: **Repeatable.** Compute and set frontmatter value using formula (literal, placeholder, or function call) *(New in v0.12.0)*
-- `--case CASE_TYPE`: Transform case of values. Options: `upper`, `lower`, `Sentence case`, `Title Case`, `snake_case`, `kebab-case`
+- `--case CASE_TYPE`: Transform case of values. Options: `upper`, `lower`, `Sentence case`, `Title Case`, `hashtag`, `snake_case`, `kebab-case`
 - `--replace FROM TO`: **Repeatable.** Replace values matching FROM with TO
 - `--remove [VALUE]`: **Repeatable.** Remove values matching VALUE. If VALUE is omitted, removes the entire frontmatter field *(Enhanced in v0.20.0)*
 
@@ -392,6 +392,7 @@ fmu update "*.md" --name display_title --compute "=coalesce($frontmatter.short_t
 fmu update "*.md" --name title --case "Title Case"
 fmu update "*.md" --name author --case lower
 fmu update "*.md" --name tags --case kebab-case
+fmu update "*.md" --name title --case hashtag
 
 # Replace values (substring replacement)
 fmu update "*.md" --name status --replace draft published
@@ -517,6 +518,8 @@ Formulas can be:
   - Example: `=snakeCase($frontmatter.title)`
 - `kebabCase(arg)`: Transform value to kebab-case *(New in v0.26.0)*
   - Example: `=kebabCase($frontmatter.title)`
+- `hashtagCase(arg)`: Transform value to hashtag format *(New in v0.28.0)*
+  - Example: `=hashtagCase($frontmatter.title)`
 
 **Concat Escape Note (v0.26.0):**
 - Quoted escape sequences are interpreted in function parameters.
@@ -536,6 +539,7 @@ Formulas can be:
 - `Title Case`: Title Case (capitalize each word)
 - `snake_case`: snake_case (lowercase with underscores)
 - `kebab-case`: kebab-case (lowercase with hyphens)
+- `hashtag`: hashtag format (prefix with `#`, remove spaces and punctuation, capitalize each word)
 
 **Note:** Case transformations properly handle contractions (e.g., "can't" → "Can't", not "Can'T") as of v0.8.0.
 
